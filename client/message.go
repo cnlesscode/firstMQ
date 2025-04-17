@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/cnlesscode/gotool"
@@ -11,7 +10,6 @@ import (
 
 // 记录错误消息到缓存通道
 func RecordErrorMessage(message []byte, k string) {
-	fmt.Printf("RecordErrorMessage k: %v\n", k)
 	msg := Message{}
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
