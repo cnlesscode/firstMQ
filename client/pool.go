@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	serverFinderClient "github.com/cnlesscode/serverFinder/clinet"
+	serverFinderClient "github.com/cnlesscode/serverFinder/client"
 )
 
 // 已有连接池 map

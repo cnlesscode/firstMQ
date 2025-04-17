@@ -7,7 +7,8 @@ import (
 	"github.com/cnlesscode/firstMQ/configs"
 	"github.com/cnlesscode/firstMQ/kernel"
 	"github.com/cnlesscode/gotool"
-	serverFinderClient "github.com/cnlesscode/serverFinder/clinet"
+
+	serverFinderClient "github.com/cnlesscode/serverFinder/client"
 )
 
 // TCPServer TCP服务器结构
