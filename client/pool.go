@@ -3,6 +3,8 @@ package client
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -48,6 +50,7 @@ func New(ServerFinderAddr string, capacity int, purpose string) (*MQConnectionPo
 			ServerFinderAddr,
 			"firstMQServers",
 			func(message map[string]any) {
+				fmt.Printf("message: %v\n", message)
 				if len(message) < 1 {
 					return
 				}
@@ -72,7 +75,7 @@ func New(ServerFinderAddr string, capacity int, purpose string) (*MQConnectionPo
 			}
 			// 启动对应连接数数量的协程重发错误消息
 			var wg sync.WaitGroup
-			for i := 0; i < MQPoolMap[mapKeyIn].Capacity*5; i++ {
+			for i := 0; i < MQPoolMap[mapKeyIn].Capacity*10; i++ {
 				wg.Add(1)
 				go func(mapKeyIn string) {
 					defer wg.Done()
@@ -123,10 +126,9 @@ func (m *MQConnectionPool) Init(addrs map[string]any) error {
 	} else {
 		m.Addresses = addrs
 	}
-
 	// 2. 检查服务器可用状态，不可用则移除
 	for k, v := range m.Addresses {
-		connIn, err := NewAClient(v.(string))
+		connIn, err := NewAConn(v.(string))
 		if err != nil {
 			// 从地址map中移除
 			delete(m.Addresses, k)
@@ -168,19 +170,17 @@ func (m *MQConnectionPool) Init(addrs map[string]any) error {
 			m.InitNewNode(addr)
 		} else {
 			// 已有节点
-			// log.Println("✔ 重新规划已有连接 : ", addr)
 			m.ConnDifferenceNumber[addr] = capacityForEveryServer - m.ConnNumber[addr]
 			m.ConnNumber[addr] = capacityForEveryServer
 			if m.ConnDifferenceNumber[addr] > 0 {
 				for i := 0; i < m.ConnDifferenceNumber[addr]; i++ {
-					tcpConnection, _ := m.NewAClientForPool(addr)
+					tcpConnection, _ := m.NewAConnForPool(addr)
 					m.MQConnections[addr] <- tcpConnection
 				}
-				// log.Println("✔ 新增连接 : ", addr, " 完成，新增数量:", m.ConnDifferenceNumber[addr])
+				log.Println("✔ 新增连接 : ", addr, " 完成，新增数量:", m.ConnDifferenceNumber[addr])
 				m.ConnDifferenceNumber[addr] = 0
 			} else if m.ConnDifferenceNumber[addr] < 0 {
 				go func() {
-					// log.Println("※ 需要减少连接 : ", addr, m.ConnDifferenceNumber[addr])
 					for i := 0; i > m.ConnDifferenceNumber[addr]; i-- {
 						tcpConnection := <-m.AllConnections
 						if tcpConnection.Addr == addr {
@@ -191,8 +191,8 @@ func (m *MQConnectionPool) Init(addrs map[string]any) error {
 							m.AllConnections <- tcpConnection
 						}
 					}
-					// log.Println("✔ 减少连接 : ", addr, " 完成，减少数量:", m.ConnDifferenceNumber[addr])
 					m.ConnDifferenceNumber[addr] = 0
+					log.Println("✔ 减少连接 : ", addr, " 完成，减少数量:", m.ConnDifferenceNumber[addr])
 				}()
 			}
 		}
@@ -205,7 +205,7 @@ func (m *MQConnectionPool) InitNewNode(addr string) {
 	m.MQConnections[addr] = make(chan *MQConnection, m.ConnNumber[addr]+10)
 	m.ConnDifferenceNumber[addr] = 0
 	for i := 0; i < m.ConnNumber[addr]; i++ {
-		tcpConnection, err := m.NewAClientForPool(addr)
+		tcpConnection, err := m.NewAConnForPool(addr)
 		if err != nil {
 			continue
 		}
@@ -213,43 +213,18 @@ func (m *MQConnectionPool) InitNewNode(addr string) {
 	}
 
 	// 从节点连接池中获取连接，填充进总连接池
-	// 同时检查错误连接，并尝试修复
-	go func() {
-		var err error
+	go func(addrIn string) {
 		for {
-			tcpConnection := <-m.MQConnections[addr]
-			if !tcpConnection.Status {
-				if tcpConnection.Conn != nil {
-					tcpConnection.Conn.Close()
-				}
-				tcpConnection, err = m.NewAClientForPool(addr)
-				if err == nil {
+			select {
+			case tcpConnection := <-m.MQConnections[addrIn]:
+				if tcpConnection.Status {
 					m.AllConnections <- tcpConnection
 				}
-				// 运行至此会将无法修复的坏连接丢掉
-			} else {
-				m.AllConnections <- tcpConnection
+			default:
+				time.Sleep(time.Millisecond * 10)
 			}
 		}
-	}()
-}
-
-// 获取一个连接
-func (m *MQConnectionPool) GetAConnection() (*MQConnection, error) {
-	select {
-	case tcpConnection := <-m.AllConnections:
-		status, ok := m.ServerStatus[tcpConnection.Addr]
-		if !ok {
-			return nil, errors.New("无法获取有效连接 E200103")
-		}
-		if status {
-			return tcpConnection, nil
-		}
-		// 当某个服务掉线时，此处会丢弃该服务器的连接
-		return nil, errors.New("无法获取有效连接 E200105")
-	case <-time.After(time.Second):
-		return nil, errors.New("无法获取有效连接 E200106")
-	}
+	}(addr)
 }
 
 // 获取 MQ 服务列表

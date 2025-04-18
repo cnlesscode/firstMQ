@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -70,21 +69,15 @@ func TestProductAMessage(t *testing.T) {
 // 生产消息 - 并发多条
 // go test -v -run=TestProductMessages
 func TestProductMessages(t *testing.T) {
-	mqPool, err := New(addr, 2000, "ProductMessages")
+	mqPool, err := New(addr, 3000, "ProductMessages")
 	if err != nil {
 		panic(err.Error())
 	}
-	go func() {
-		for {
-			time.Sleep(time.Second * 5)
-			fmt.Printf("协程数 : %v\n", runtime.NumGoroutine())
-		}
-	}()
 	// 循环批量生产消息
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 2; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
-		for ii := 1; ii <= 20000; ii++ {
+		for ii := 1; ii <= 100000; ii++ {
 			n := i*1000000 + ii
 			wg.Add(1)
 			go func(iin int) {
@@ -94,9 +87,9 @@ func TestProductMessages(t *testing.T) {
 					Topic:  "default",
 					Data:   []byte(strconv.Itoa(iin) + " test message ..."),
 				})
-				// if err != nil {
-				// 	fmt.Printf("err 0001: %v\n", err.Error())
-				// }
+				if err != nil {
+					fmt.Printf("err 0001: %v\n", err.Error())
+				}
 			}(n)
 		}
 		wg.Wait()
@@ -109,10 +102,11 @@ func TestProductMessages(t *testing.T) {
 	for {
 		errCount := len(MQPoolMap[addr+"ProductMessages"].ErrorMessage)
 		fmt.Printf("errCount: %v\n", errCount)
-		if errCount <= 0 {
+		if errCount < 1 {
 			break
+		} else {
+			time.Sleep(time.Second * 3)
 		}
-		time.Sleep(time.Second * 1)
 	}
 }
 

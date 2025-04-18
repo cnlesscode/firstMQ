@@ -7,33 +7,28 @@ https://www.lesscode.work/sections/94de498e71d87a0d011295bf5deb0fd2.html
 ### 快速启动
 #### main.go
 ```
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"time"
+
+	"github.com/cnlesscode/firstMQ/configs"
+	"github.com/cnlesscode/firstMQ/server"
+)
+
 func main() {
-	if configs.RunMode == "debug" {
+	// 运行模式
+	if configs.RunMode == "debug" || configs.RunMode == "dev" {
 		go func() {
 			for {
 				time.Sleep(time.Second * 5)
 				fmt.Printf("协程数 : %v\n", runtime.NumGoroutine())
-				fmt.Printf("cap(kernel.MessageChannels[\"test\"]): %v\n", cap(kernel.MessageChannels["test"]))
-				fmt.Printf("len(kernel.MessageChannels[\"test\"]): %v\n", len(kernel.MessageChannels["test"]))
 			}
 		}()
 	}
-
-	log.Println("当前服务器IP:" + configs.CurrentIP)
-
-	// 启动 ServerFinder 服务
-	// 开启条件 : 服务器ip == ServerFinderConfig.Host
-	go func() {
-		serverFinder.Start(configs.ServerFinderConfig)
-	}()
-
-	// 开启 WS 服务
-	go func() {
-		server.StartWSServer()
-	}()
-
-	// 开启 TCP 服务
-	server.StartFirstMQTcpServer()
+	server.Start()
 }
 ```
 

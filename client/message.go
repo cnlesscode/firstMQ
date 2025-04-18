@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"errors"
-	"time"
 
 	"github.com/cnlesscode/gotool"
 )
@@ -34,20 +33,11 @@ func (st *MQConnectionPool) Send(message Message) (ResponseMessage, error) {
 		return response, err
 	}
 	// 获取一个可用连接
-	getConnectionCount := 0
-GetAConnectionLoop:
 	mqClient, err := st.GetAConnection()
 	if err != nil {
-		if getConnectionCount < 3 {
-			getConnectionCount++
-			time.Sleep(time.Millisecond * 100)
-			goto GetAConnectionLoop
-		} else {
-			RecordErrorMessage(messageByte, st.Key)
-			return response, err
-		}
+		RecordErrorMessage(messageByte, st.Key)
+		return response, err
 	}
-
 	res, err := mqClient.SendBytes(messageByte)
 	if err != nil {
 		return response, err
@@ -65,13 +55,16 @@ GetAConnectionLoop:
 
 // send []byte
 func (st *MQConnection) SendBytes(message []byte) ([]byte, error) {
+
 	defer func() {
 		// 如果是新建的连接关闭连接
 		// 如果是来自连接池的连接填充回连接池
 		if st.MapKey == "" {
 			st.Conn.Close()
 		} else {
-			MQPoolMap[st.MapKey].MQConnections[st.Addr] <- st
+			if st.Status {
+				MQPoolMap[st.MapKey].MQConnections[st.Addr] <- st
+			}
 		}
 	}()
 
@@ -85,22 +78,28 @@ func (st *MQConnection) SendBytes(message []byte) ([]byte, error) {
 	err := gotool.WriteTCPResponse(st.Conn, message)
 	if err != nil {
 		RecordErrorMessage(message, st.MapKey)
-		st.Status = false
-		st.Conn.Close()
-		st.Conn = nil
+		st.SendError()
 		return nil, err
 	}
 
 	// ------ 接收消息 ------
 	buf, err := gotool.ReadTCPResponse(st.Conn)
-
 	// 连接被关闭
 	if err != nil {
-		st.Status = false
-		st.Conn.Close()
-		st.Conn = nil
+		st.SendError()
 		return nil, err
 	}
 
 	return buf, nil
+}
+
+func (st *MQConnection) SendError() {
+	// 消息服务器断开
+	st.Status = false
+	// 从对应连接池中减掉连接数
+	if _, ok := MQPoolMap[st.MapKey]; ok {
+		if _, ok := MQPoolMap[st.MapKey].ConnNumber[st.Addr]; ok {
+			MQPoolMap[st.MapKey].ConnNumber[st.Addr]--
+		}
+	}
 }

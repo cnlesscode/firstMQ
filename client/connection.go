@@ -1,13 +1,30 @@
 package client
 
 import (
+	"errors"
 	"net"
 	"time"
 )
 
+// 获取一个连接
+func (m *MQConnectionPool) GetAConnection() (*MQConnection, error) {
+	tryTimer := 0
+	for {
+		select {
+		case tcpConnection := <-m.AllConnections:
+			return tcpConnection, nil
+		default:
+			tryTimer++
+			if tryTimer > 3 {
+				return nil, errors.New("无法获取有效连接 E200106")
+			}
+		}
+	}
+}
+
 // 初始化一个TCP连接
 // 非连接池模式
-func NewAClient(addr string) (*MQConnection, error) {
+func NewAConn(addr string) (*MQConnection, error) {
 	tcpConnection := &MQConnection{
 		Addr: addr,
 	}
@@ -21,8 +38,8 @@ func NewAClient(addr string) (*MQConnection, error) {
 	return tcpConnection, nil
 }
 
-func (m *MQConnectionPool) NewAClientForPool(addr string) (*MQConnection, error) {
-	tcpConnection, err := NewAClient(addr)
+func (m *MQConnectionPool) NewAConnForPool(addr string) (*MQConnection, error) {
+	tcpConnection, err := NewAConn(addr)
 	tcpConnection.MapKey = m.Key
 	return tcpConnection, err
 }
