@@ -7,18 +7,12 @@ import (
 )
 
 // 获取一个连接
-func (m *MQConnectionPool) GetAConnection() (*MQConnection, error) {
-	tryTimer := 0
-	for {
-		select {
-		case tcpConnection := <-m.AllConnections:
-			return tcpConnection, nil
-		default:
-			tryTimer++
-			if tryTimer > 3 {
-				return nil, errors.New("无法获取有效连接 E200106")
-			}
-		}
+func (m *MQPool) GetAConnection() (*MQConnection, error) {
+	select {
+	case tcpConnection := <-m.Connections:
+		return tcpConnection, nil
+	case <-time.After(time.Second):
+		return nil, errors.New("无法获取有效连接 E200103")
 	}
 }
 
@@ -38,9 +32,8 @@ func NewAConn(addr string) (*MQConnection, error) {
 	return tcpConnection, nil
 }
 
-func (m *MQConnectionPool) NewAConnForPool(addr string) (*MQConnection, error) {
+func (m *MQPool) NewAConnForPool(addr string) (*MQConnection, error) {
 	tcpConnection, err := NewAConn(addr)
-	tcpConnection.MapKey = m.Key
 	return tcpConnection, err
 }
 

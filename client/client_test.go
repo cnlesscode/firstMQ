@@ -14,11 +14,11 @@ var addr string = "192.168.31.188:8881"
 // 初始化连接池
 // go test -v -run=TestInitPool
 func TestInitPool(t *testing.T) {
-	mqPool, err := New(addr, 100, "TestInitPool")
+	mqPool, err := New(addr, 100)
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("mqPool: %v\n", len(mqPool.Addresses))
+	fmt.Printf("mqPool 节点服务器数量: %v\n", len(mqPool.Addresses))
 	for {
 		time.Sleep(time.Second * 5)
 	}
@@ -27,7 +27,7 @@ func TestInitPool(t *testing.T) {
 // 创建话题
 // go test -v -run=TestCreateATopic
 func TestCreateATopic(t *testing.T) {
-	mqPool, err := New(addr, 1, "CreateTopic")
+	mqPool, err := New(addr, 1)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -46,7 +46,7 @@ func TestCreateATopic(t *testing.T) {
 // 生产消息 - 单条
 // go test -v -run=TestProductAMessage
 func TestProductAMessage(t *testing.T) {
-	mqPool, err := New(addr, 1, "ProductAMessage")
+	mqPool, err := New(addr, 1)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -69,16 +69,16 @@ func TestProductAMessage(t *testing.T) {
 // 生产消息 - 并发多条
 // go test -v -run=TestProductMessages
 func TestProductMessages(t *testing.T) {
-	mqPool, err := New(addr, 3000, "ProductMessages")
+	mqPool, err := New(addr, 100)
 	if err != nil {
 		panic(err.Error())
 	}
 	// 循环批量生产消息
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 20; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
-		for ii := 1; ii <= 100000; ii++ {
-			n := i*1000000 + ii
+		for ii := 1; ii <= 20000; ii++ {
+			n := i*10000 + ii
 			wg.Add(1)
 			go func(iin int) {
 				defer wg.Done()
@@ -87,9 +87,9 @@ func TestProductMessages(t *testing.T) {
 					Topic:  "default",
 					Data:   []byte(strconv.Itoa(iin) + " test message ..."),
 				})
-				if err != nil {
-					fmt.Printf("err 0001: %v\n", err.Error())
-				}
+				// if err != nil {
+				// 	fmt.Printf("err 0001: %v\n", err.Error())
+				// }
 			}(n)
 		}
 		wg.Wait()
@@ -100,19 +100,17 @@ func TestProductMessages(t *testing.T) {
 	// 客户端连接池为空，没有连接可用，这样的失败操作会被记录，客户端会自动再次提交
 	// 客户端会自动重试，最终消息并不会丢失
 	for {
-		errCount := len(MQPoolMap[addr+"ProductMessages"].ErrorMessage)
+		errCount := len(mqPool.ErrorMessage)
 		fmt.Printf("errCount: %v\n", errCount)
-		if errCount < 1 {
-			break
-		} else {
-			time.Sleep(time.Second * 3)
-		}
+		fmt.Printf("-- %v -- %v", len(mqPool.BadConnections), len(mqPool.Connections))
+		fmt.Printf("-- %v", len(mqPool.ErrorMessage))
+		time.Sleep(time.Second * 3)
 	}
 }
 
 // go test -v -run=TestConsumeMessage
 func TestConsumeMessage(t *testing.T) {
-	mqPool, err := New(addr, 100, "ConsumeMessage")
+	mqPool, err := New(addr, 100)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -137,7 +135,7 @@ func TestConsumeMessage(t *testing.T) {
 
 // go test -v -run=TestCreateConsumeGroup
 func TestCreateConsumeGroup(t *testing.T) {
-	mqPool, err := New(addr, 1, "ConsumeMessage")
+	mqPool, err := New(addr, 1)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -159,7 +157,7 @@ func TestCreateConsumeGroup(t *testing.T) {
 
 // go test -v -run=TestServerList
 func TestServerList(t *testing.T) {
-	mqPool, err := New(addr, 1, "TestServerList")
+	mqPool, err := New(addr, 1)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -185,7 +183,7 @@ func TestServerList(t *testing.T) {
 
 // go test -v -run=TestTopicList
 func TestTopicList(t *testing.T) {
-	mqPool, err := New(addr, 10, "test")
+	mqPool, err := New(addr, 10)
 	if err != nil {
 		panic(err.Error())
 	}

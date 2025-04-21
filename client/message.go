@@ -7,8 +7,83 @@ import (
 	"github.com/cnlesscode/gotool"
 )
 
+// 发送消息
+func (st *MQPool) Send(message Message) (ResponseMessage, error) {
+
+	// 整理消息
+	response := ResponseMessage{}
+	messageByte, err := json.Marshal(message)
+	if err != nil {
+		return response, err
+	}
+
+	// 获取一个可用连接
+	mqClient, err := st.GetAConnection()
+	// 错误 : 无可用连接
+	if err != nil {
+		st.RecordErrorMessage(messageByte)
+		return response, err
+	}
+
+	// 错误 : 发送消息失败
+	res, err := mqClient.SendBytes(messageByte)
+	if err != nil {
+		st.RecordErrorMessage(messageByte)
+		// 将连接给回错误连接池
+		select {
+		case st.BadConnections <- mqClient:
+		default:
+		}
+		return response, err
+	}
+
+	// 至此与服务端通信时成功的，消息已经成功发送
+	// 将连接给回有效连接池
+	select {
+	case st.Connections <- mqClient:
+	default:
+	}
+
+	// 服务端返回结果错误
+	err = json.Unmarshal(res, &response)
+	if err != nil {
+		return response, err
+	}
+	if response.ErrCode != 0 {
+		return response, errors.New(response.Data)
+	}
+
+	// 返回结果
+	return response, nil
+}
+
+// send []byte
+func (st *MQConnection) SendBytes(message []byte) ([]byte, error) {
+
+	if st.Conn == nil || !st.Status {
+		return nil, errors.New("TCP 服务错误")
+	}
+
+	// ------ 发送消息 ------
+	err := gotool.WriteTCPResponse(st.Conn, message)
+	if err != nil {
+		st.Status = false
+		return nil, err
+	}
+
+	// ------ 接收消息 ------
+	buf, err := gotool.ReadTCPResponse(st.Conn)
+	// 连接被关闭
+	if err != nil {
+		st.Status = false
+		return nil, err
+	}
+
+	return buf, nil
+}
+
 // 记录错误消息到缓存通道
-func RecordErrorMessage(message []byte, k string) {
+func (st *MQPool) RecordErrorMessage(message []byte) {
 	msg := Message{}
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
@@ -18,88 +93,9 @@ func RecordErrorMessage(message []byte, k string) {
 		return
 	}
 	select {
-	case MQPoolMap[k].ErrorMessage <- message:
+	case st.ErrorMessage <- message:
 		return
 	default:
 		return
-	}
-}
-
-// 发送消息
-func (st *MQConnectionPool) Send(message Message) (ResponseMessage, error) {
-	response := ResponseMessage{}
-	messageByte, err := json.Marshal(message)
-	if err != nil {
-		return response, err
-	}
-	// 获取一个可用连接
-	mqClient, err := st.GetAConnection()
-	if err != nil {
-		RecordErrorMessage(messageByte, st.Key)
-		return response, err
-	}
-	res, err := mqClient.SendBytes(messageByte)
-	if err != nil {
-		return response, err
-	}
-	err = json.Unmarshal(res, &response)
-	if err != nil {
-		return response, err
-	}
-	if response.ErrCode != 0 {
-		return response, errors.New(response.Data)
-	}
-
-	return response, nil
-}
-
-// send []byte
-func (st *MQConnection) SendBytes(message []byte) ([]byte, error) {
-
-	defer func() {
-		// 如果是新建的连接关闭连接
-		// 如果是来自连接池的连接填充回连接池
-		if st.MapKey == "" {
-			st.Conn.Close()
-		} else {
-			if st.Status {
-				MQPoolMap[st.MapKey].MQConnections[st.Addr] <- st
-			}
-		}
-	}()
-
-	if st.Conn == nil || !st.Status {
-		RecordErrorMessage(message, st.MapKey)
-		st.Status = false
-		return nil, errors.New("TCP 服务错误")
-	}
-
-	// ------ 发送消息 ------
-	err := gotool.WriteTCPResponse(st.Conn, message)
-	if err != nil {
-		RecordErrorMessage(message, st.MapKey)
-		st.SendError()
-		return nil, err
-	}
-
-	// ------ 接收消息 ------
-	buf, err := gotool.ReadTCPResponse(st.Conn)
-	// 连接被关闭
-	if err != nil {
-		st.SendError()
-		return nil, err
-	}
-
-	return buf, nil
-}
-
-func (st *MQConnection) SendError() {
-	// 消息服务器断开
-	st.Status = false
-	// 从对应连接池中减掉连接数
-	if _, ok := MQPoolMap[st.MapKey]; ok {
-		if _, ok := MQPoolMap[st.MapKey].ConnNumber[st.Addr]; ok {
-			MQPoolMap[st.MapKey].ConnNumber[st.Addr]--
-		}
 	}
 }
