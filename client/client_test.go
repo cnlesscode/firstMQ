@@ -74,7 +74,7 @@ func TestProductMessages(t *testing.T) {
 		panic(err.Error())
 	}
 	// 循环批量生产消息
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 50; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
 		for ii := 1; ii <= 20000; ii++ {

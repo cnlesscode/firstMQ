@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"time"
 
@@ -33,7 +32,7 @@ func New(ServerFinderAddr string, capacityForNode int) (*MQPool, error) {
 			ServerFinderAddr,
 			"firstMQServers",
 			func(message map[string]any) {
-				fmt.Printf("message: %v\n", message)
+				log.Println("※ 服务器节点变化 : ", message)
 				if len(message) < 1 {
 					return
 				}
@@ -58,14 +57,12 @@ func New(ServerFinderAddr string, capacityForNode int) (*MQPool, error) {
 			case badConn := <-mqPoolIn.BadConnections:
 				// 如果连接对应的服务器已经下线直接丢弃错误连接
 				if !mqPoolIn.ServerStatus[badConn.Addr] {
-					log.Println("服务器已经下线，丢弃")
 					continue
 				}
 				// 有错误连接尝试修复
 				conn, err := mqPoolIn.NewAConnForPool(badConn.Addr)
 				if err == nil {
 					// 创建成功，则将错误连接丢弃
-					log.Println("错误连接修复成功")
 					mqPoolIn.Connections <- conn
 				} else {
 					// 创建失败，则将错误连接放入错误连接池
