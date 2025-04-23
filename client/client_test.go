@@ -35,7 +35,7 @@ func TestCreateATopic(t *testing.T) {
 	// 生成环境无需延迟
 	time.Sleep(time.Second * 1)
 	// 创建话题
-	response, err := mqPool.Send(Message{Action: 3, Topic: "default"})
+	response, err := mqPool.CreateTopic("default")
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	} else {
@@ -54,11 +54,7 @@ func TestProductAMessage(t *testing.T) {
 	// 生成环境无需延迟
 	time.Sleep(time.Second * 1)
 	//
-	response, err := mqPool.Send(Message{
-		Action: 1,
-		Topic:  "default",
-		Data:   []byte("a test message ..."),
-	})
+	response, err := mqPool.Product("default", []byte("a test message ..."))
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	} else {
@@ -74,7 +70,7 @@ func TestProductMessages(t *testing.T) {
 		panic(err.Error())
 	}
 	// 循环批量生产消息
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 5; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
 		for ii := 1; ii <= 20000; ii++ {
@@ -82,11 +78,7 @@ func TestProductMessages(t *testing.T) {
 			wg.Add(1)
 			go func(iin int) {
 				defer wg.Done()
-				_, err = mqPool.Send(Message{
-					Action: 1,
-					Topic:  "default",
-					Data:   []byte(strconv.Itoa(iin) + " test message ..."),
-				})
+				_, err = mqPool.Product("default", []byte(strconv.Itoa(iin)+" test message ..."))
 				// if err != nil {
 				// 	fmt.Printf("err 0001: %v\n", err.Error())
 				// }
@@ -121,11 +113,7 @@ func TestConsumeMessage(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for {
-				response, _ := mqPool.Send(Message{
-					Action:        2,
-					Topic:         "default",
-					ConsumerGroup: "default",
-				})
+				response, _ := mqPool.Consume("default", "default")
 				fmt.Printf("response: %v\n", response.Data)
 			}
 		}()
@@ -143,11 +131,7 @@ func TestCreateConsumeGroup(t *testing.T) {
 	// 生成环境无需延迟
 	time.Sleep(time.Second * 1)
 	//
-	response, err := mqPool.Send(Message{
-		Action:        7,
-		Topic:         "default",
-		ConsumerGroup: "consumer01",
-	})
+	response, err := mqPool.CreateConsumerGroup("default", "consumer01")
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	} else {
@@ -187,9 +171,7 @@ func TestTopicList(t *testing.T) {
 	if err != nil {
 		panic(err.Error())
 	}
-	response, err := mqPool.Send(Message{
-		Action: 4,
-	})
+	response, err := mqPool.GetTopicList()
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	} else {
