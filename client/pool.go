@@ -99,8 +99,6 @@ func (m *MQPool) Init(addrs map[string]any) error {
 		if err != nil {
 			// 从地址map中移除
 			delete(m.Addresses, k)
-			// 从 ServerFinder 中移除
-			serverFinderClient.Remove(m.ServerFindAddr, "firstMQServers", k)
 		} else {
 			connIn.Close()
 		}

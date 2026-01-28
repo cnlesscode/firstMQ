@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net"
 
 	"github.com/cnlesscode/firstMQ/configs"
@@ -52,7 +51,6 @@ func (t *TCPServer) Handle(conn net.Conn) {
 			break
 		}
 		// 输出响应
-		// 响应消息长度
 		err = gotool.WriteTCPResponse(conn, TCPResponse(content))
 		if err != nil {
 			conn.Close()
@@ -68,11 +66,14 @@ func StartFirstMQTcpServer() {
 		configs.ServerFinderConfig.Host+":"+configs.ServerFinderConfig.Port,
 		"firstMQServers",
 		configs.CurrentIP+":"+configs.FirstMQConfig.Port,
+		func(msg map[string]any) {},
 	)
 	// 2. 初始化 FirstMQ 话题
 	kernel.LoadTopics()
 	// 3. 启动 FirstMQ TCP 服务
 	tcpServer := NewTCPServer(":" + configs.FirstMQConfig.Port)
-	log.Println("✔ FirstMQ : 服务" + "启动成功，端口:" + configs.FirstMQConfig.Port)
+	gotool.LogOk(
+		"FirstMQ is running on port ",
+		configs.FirstMQConfig.Port, ".")
 	tcpServer.Accept()
 }
