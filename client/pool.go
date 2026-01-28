@@ -2,9 +2,10 @@ package client
 
 import (
 	"errors"
-	"log"
 	"time"
 
+	"github.com/cnlesscode/firstMQ/configs"
+	"github.com/cnlesscode/gotool"
 	serverFinderClient "github.com/cnlesscode/serverFinder/client"
 )
 
@@ -30,9 +31,9 @@ func New(ServerFinderAddr string, capacityForNode int) (*MQPool, error) {
 		time.Sleep(time.Second * 5)
 		serverFinderClient.Listen(
 			ServerFinderAddr,
-			"firstMQServers",
+			configs.ServerFinderVarKey,
 			func(message map[string]any) {
-				log.Println("※ 服务器节点变化 : ", message)
+				gotool.LogDebug("Server node changes : ", message)
 				if len(message) < 1 {
 					return
 				}

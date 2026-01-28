@@ -25,6 +25,9 @@ var ServerFinderConfig = serverFinder.Config{
 	Enable: "off",
 }
 
+// ServerFinder 服务 key
+var ServerFinderVarKey string = "firstMQServers"
+
 // FirstMQ服务配置
 type FirstMQConfigStruct struct {
 	// 是否开启服务
@@ -51,7 +54,7 @@ type FirstMQConfigStruct struct {
 
 var FirstMQConfig = &FirstMQConfigStruct{}
 
-func init() {
+func Init() {
 	configFile := gotool.Root + "configs.ini"
 	if !gfs.FileExists(configFile) {
 		panic("配置文件不存在")

@@ -64,16 +64,15 @@ func StartFirstMQTcpServer() {
 	// 1. 注册服务到 ServerFinder
 	serverFinderClient.Register(
 		configs.ServerFinderConfig.Host+":"+configs.ServerFinderConfig.Port,
-		"firstMQServers",
+		configs.ServerFinderVarKey,
 		configs.CurrentIP+":"+configs.FirstMQConfig.Port,
-		func(msg map[string]any) {},
 	)
 	// 2. 初始化 FirstMQ 话题
 	kernel.LoadTopics()
 	// 3. 启动 FirstMQ TCP 服务
 	tcpServer := NewTCPServer(":" + configs.FirstMQConfig.Port)
 	gotool.LogOk(
-		"FirstMQ is running on port ",
+		"FirstMQ : MQSetver is running on port ",
 		configs.FirstMQConfig.Port, ".")
 	tcpServer.Accept()
 }

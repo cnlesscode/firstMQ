@@ -2,7 +2,6 @@ package kernel
 
 import (
 	"encoding/binary"
-	"log"
 	"os"
 	"path"
 	"time"
@@ -12,7 +11,6 @@ import (
 
 // 落盘函数
 func SaveMessageToDisk(topicName string) {
-	log.Println("✔ FirstMQ : 开始落盘，话题:" + topicName)
 SaveMessageToDiskStart:
 	// 遍历话题内消息
 	var messageCount int64 = 0

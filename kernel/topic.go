@@ -3,12 +3,12 @@ package kernel
 import (
 	"encoding/binary"
 	"errors"
-	"log"
 	"os"
 	"path"
 	"regexp"
 
 	"github.com/cnlesscode/firstMQ/configs"
+	"github.com/cnlesscode/gotool"
 	"github.com/cnlesscode/gotool/gfs"
 )
 
@@ -64,7 +64,7 @@ func LoadTopics() {
 	FillMessagesToConsumeChannel()
 
 	// 记录日志
-	log.Println("✔ FirstMQ : 话题初始化成功")
+	gotool.LogOk("FirstMQ : Topic initialization successful")
 }
 
 // 创建话题

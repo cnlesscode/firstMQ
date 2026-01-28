@@ -18,7 +18,7 @@ func CreateTopicForClusters(topicName string) error {
 		return err
 	}
 	// 通知集群节点添加消费组
-	for _, node := range nodes {
+	for node := range nodes {
 		conn, err := net.DialTimeout("tcp", node, time.Second*5)
 		if err != nil {
 			continue
@@ -41,7 +41,7 @@ func CreateConsumeGroupForClusters(topicName, consumerGroup string) error {
 		return err
 	}
 	// 通知集群节点添加消费组
-	for _, node := range nodes {
+	for node := range nodes {
 		conn, err := net.DialTimeout("tcp", node, time.Second*5)
 		if err != nil {
 			continue
@@ -58,11 +58,11 @@ func CreateConsumeGroupForClusters(topicName, consumerGroup string) error {
 }
 
 // 获取集群服务器列表
-func GetClusterNodes() (map[string]string, error) {
-	nodes := make(map[string]string, 0)
+func GetClusterNodes() (map[string]int, error) {
+	nodes := make(map[string]int, 0)
 	res, err := serverFinderClient.Get(
 		configs.ServerFinderConfig.Host+":"+configs.ServerFinderConfig.Port,
-		"firstMQServers",
+		configs.ServerFinderVarKey,
 	)
 	if err != nil {
 		return nodes, err

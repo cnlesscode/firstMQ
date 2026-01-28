@@ -170,10 +170,10 @@ func Response(message *ReceiveMessage) []byte {
 	case message.Action == SeverStatus:
 		nodes, err := kernel.GetClusterNodes()
 		if err != nil {
-			return ResponseResult(100401, "服务器列表获取失败", 0)
+			return ResponseResult(100401, "服务器列表获取失败 : "+err.Error(), 0)
 		}
 		returnData := make(map[string]map[string]any, 0)
-		for _, node := range nodes {
+		for node := range nodes {
 			conn, err := net.DialTimeout("tcp", node, time.Second*5)
 			if err != nil {
 				continue

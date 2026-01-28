@@ -7,6 +7,8 @@ import (
 
 func Start() {
 
+	configs.Init()
+
 	// 启动 ServerFinder 服务
 	// 开启条件 : 服务器ip == ServerFinderConfig.Host
 	// serverFinder 服务启动时使用了协程

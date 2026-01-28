@@ -103,11 +103,18 @@ ul li{list-style:none;}
         </div>
         <div class="title" style="margin-top:25px;">响应结果</div>
         <div style="margin-top:15px;">
-            <textarea class="input" id="result" v-model="responseMessage" style="height:288px; width:100%; scroll-margin-top:900px;"></textarea>
+            <textarea 
+            class="input" 
+            id="result" 
+            v-model="responseMessage" 
+            style="height:288px; width:100%; scroll-margin-top:900px;"></textarea>
         </div>
         <div class="title" style="margin-top:25px;">发送消息</div>
         <div style="margin-top:15px;">
-            <textarea class="input" v-model="defaultMessage" style="height:88px; width:100%;"></textarea>
+            <textarea 
+            class="input" 
+            v-model="defaultMessage" 
+            style="height:88px; width:100%;"></textarea>
         </div>
         <div class="flex row space-between" style="margin-top:12px;">
             <div class="quick-message flex1">
@@ -124,14 +131,14 @@ ul li{list-style:none;}
         </div>
     </div>
 </div>
-<script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/jquery/1.7.2/jquery.min.js"></script>
-<script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/3.2.31/vue.global.min.js"></script>
+<script src="https://unpkg.com/jquery@4.0.0/dist/jquery.js"></script>
+<script src="https://unpkg.com/vue@3.5.27/dist/vue.global.js"></script>
 <script>
 const { createApp, ref } = Vue;
 createApp({
     data:function(){
         return {
-            serverAddr : "192.168.31.188:8883",
+            serverAddr : "192.168.0.105:8883",
             responseMessage : "",
             socket : null,
             serverList : null,
@@ -164,9 +171,7 @@ createApp({
             };
             this.socket.onmessage = (event)=>{
                 var message = event.data;
-                
                 var messageObj = JSON.parse(message);
-                
                 if(messageObj.ErrCode != 0){
                     this.responseMessage += "✘ " + messageObj.Data + "\n";
                     return ;
@@ -211,7 +216,7 @@ createApp({
             if(this.socket != null){
                 this.socket.send(msg);
             }else{
-                this.responseMessage += "☹ 请先连接服务器\n";
+                this.responseMessage += "✘ 请先连接服务器\n";
             }
         },
         submitMessage : function(){
