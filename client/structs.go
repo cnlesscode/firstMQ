@@ -28,7 +28,7 @@ type MQConnection struct {
 // 接池结构体
 type MQPool struct {
 	ServerFindAddr  string // ServerFind 地址
-	Addresses       map[string]any
+	Addresses       map[string]int
 	Connections     chan *MQConnection // 总连接池，存放所有连接
 	BadConnections  chan *MQConnection // 坏的的连接池
 	CapacityForNode int                // 每个节点连接池总容量

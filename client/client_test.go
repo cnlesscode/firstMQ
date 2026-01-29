@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-var addr string = "192.168.31.188:8881"
+var addr string = "192.168.0.185:8881"
 
 // 初始化连接池
 // go test -v -run=TestInitPool
 func TestInitPool(t *testing.T) {
-	mqPool, err := New(addr, 100)
+	mqPool, err := New(addr, 2)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -73,15 +73,15 @@ func TestProductMessages(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
-		for ii := 1; ii <= 20000; ii++ {
+		for ii := 1; ii <= 100; ii++ {
 			n := i*10000 + ii
 			wg.Add(1)
 			go func(iin int) {
 				defer wg.Done()
 				_, err = mqPool.Product("default", []byte(strconv.Itoa(iin)+" test message ..."))
-				// if err != nil {
-				// 	fmt.Printf("err 0001: %v\n", err.Error())
-				// }
+				if err != nil {
+					fmt.Printf("err 0001: %v\n", err.Error())
+				}
 			}(n)
 		}
 		wg.Wait()

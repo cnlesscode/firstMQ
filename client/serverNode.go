@@ -13,7 +13,7 @@ func (m *MQPool) GetMQServerAddresses() error {
 	if err != nil {
 		return err
 	}
-	address := make(map[string]any)
+	address := make(map[string]int)
 	err = json.Unmarshal([]byte(res), &address)
 	if err != nil {
 		return err

@@ -20,7 +20,7 @@ func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg []byte)) {
 	if err != nil {
 		return
 	}
-	addresses := make(map[string]any)
+	addresses := make(map[string]int)
 	err = json.Unmarshal([]byte(res), &addresses)
 	if err != nil {
 		return
@@ -34,7 +34,7 @@ func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg []byte)) {
 	serverFinderClient.Listen(
 		ServerFinderAddr,
 		configs.ServerFinderVarKey,
-		func(message map[string]any) {
+		func(message map[string]int) {
 			gotool.LogDebug("Server node changes : ", message)
 			if len(message) < 1 {
 				return

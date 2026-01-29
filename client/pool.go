@@ -32,7 +32,7 @@ func New(ServerFinderAddr string, capacityForNode int) (*MQPool, error) {
 		serverFinderClient.Listen(
 			ServerFinderAddr,
 			configs.ServerFinderVarKey,
-			func(message map[string]any) {
+			func(message map[string]int) {
 				gotool.LogDebug("Server node changes : ", message)
 				if len(message) < 1 {
 					return
@@ -78,7 +78,7 @@ func New(ServerFinderAddr string, capacityForNode int) (*MQPool, error) {
 	return mqPool, err
 }
 
-func (m *MQPool) Init(addrs map[string]any) error {
+func (m *MQPool) Init(addrs map[string]int) error {
 
 	// 1. 记录旧的节点列表
 	oldAddresses := m.Addresses
@@ -95,8 +95,8 @@ func (m *MQPool) Init(addrs map[string]any) error {
 	}
 
 	// 3. 检查服务器可用状态，不可用则移除
-	for k, v := range m.Addresses {
-		connIn, err := NewAConn(v.(string))
+	for k := range m.Addresses {
+		connIn, err := NewAConn(k)
 		if err != nil {
 			// 从地址map中移除
 			delete(m.Addresses, k)
