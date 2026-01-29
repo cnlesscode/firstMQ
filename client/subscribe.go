@@ -2,19 +2,19 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
+	"net"
 	"time"
 
 	"github.com/cnlesscode/firstMQ/configs"
+	"github.com/cnlesscode/firstMQ/server"
 	"github.com/cnlesscode/gotool"
 	serverFinderClient "github.com/cnlesscode/serverFinder/client"
-	"github.com/gorilla/websocket"
 )
 
-var subscribeConnections map[string]*MQConnection = make(map[string]*MQConnection)
+var subscribeServerConnections map[string]*MQConnection = make(map[string]*MQConnection)
 
 // 客户端订阅话题
-func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg map[string]any)) {
+func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg []byte)) {
 	// 获取集群服务器地址
 	res, err := serverFinderClient.Get(ServerFinderAddr, configs.ServerFinderVarKey)
 	if err != nil {
@@ -26,7 +26,7 @@ func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg map[string
 		return
 	}
 	for k := range addresses {
-		subscribeBase(k, topicName)
+		go subscribeBase(k, topicName, onMessage)
 	}
 
 	// 监听服务器组
@@ -43,35 +43,51 @@ func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg map[string
 	)
 }
 
-func subscribeBase(mqServerAddr, topicName string) {
+func subscribeBase(mqServerAddr, topicName string, onMessage func(msg []byte)) {
 	var keyName = mqServerAddr + "_" + topicName
-	fmt.Printf("keyName: %v\n", keyName)
-	if _, ok := subscribeConnections[keyName]; ok {
+	if _, ok := subscribeServerConnections[keyName]; ok {
 		return
 	}
-	go func(_mqServerAddr, _topicName string) {
-		// 初始化连接地址
-		url := "ws://" + mqServerAddr
-	SubscribeLoop:
-		// 建立连接
-		conn, _, err := websocket.DefaultDialer.Dial(url, nil)
-		if err != nil {
-			// 失败重连
-			time.Sleep(time.Second)
-			goto SubscribeLoop
-		}
-		// 监听消息
-		for {
-			_, messageByte, err := conn.ReadMessage()
-			if err != nil {
-				// 断开连接
-				conn.Close()
-				break
-			}
-			fmt.Printf("messageByte: %s\n", messageByte)
-		}
-		// 断线重连
+SubscribeLoop:
+	// 建立连接
+	conn, err := net.Dial("tcp", mqServerAddr)
+	if err != nil {
+		// 失败重连
 		time.Sleep(time.Second)
 		goto SubscribeLoop
-	}(mqServerAddr, topicName)
+	}
+	// 发送一个订阅消息
+	subscribeMessage := Message{
+		Action:        server.Subscribe,
+		ConsumerGroup: "default",
+		Data:          []byte(topicName),
+		Topic:         topicName,
+	}
+	msgByte, _ := json.Marshal(subscribeMessage)
+	err = gotool.WriteTCPResponse(conn, msgByte)
+	if err != nil {
+		time.Sleep(time.Second)
+		goto SubscribeLoop
+	}
+	gotool.LogOk("ok")
+	// 持续监听消息的循环
+	for {
+		resp, err := gotool.ReadTCPResponse(conn)
+		if err != nil {
+			// 连接断开，尝试重连
+			conn.Close()
+			gotool.LogError("连接断开，尝试重连")
+			break
+		}
+		if err != nil {
+			continue // 跳过错误消息，继续监听
+		}
+		if onMessage != nil {
+			onMessage(resp)
+		}
+	}
+	gotool.LogError(".....")
+	// 断线重连
+	time.Sleep(time.Second)
+	goto SubscribeLoop
 }

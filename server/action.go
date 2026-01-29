@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cnlesscode/firstMQ/kernel"
+	"github.com/cnlesscode/gotool"
 )
 
 // 消息类型
@@ -25,6 +26,7 @@ const (
 	SeverList                  int = 10
 	SeverStatus                int = 11
 	SeverStatusLocal           int = 12
+	Subscribe                  int = 13
 )
 
 // 接收消息结构体
@@ -43,18 +45,35 @@ type ResponseMessage struct {
 }
 
 // TCP 服务响应函数
-func TCPResponse(msg []byte) []byte {
+func TCPResponse(msg []byte) (ReceiveMessage, []byte) {
 	// 将消息转换为结构体
-	message := &ReceiveMessage{}
-	err := json.Unmarshal(msg, message)
+	message := ReceiveMessage{}
+	err := json.Unmarshal(msg, &message)
 	if err != nil {
-		return ResponseResult(100001, "消息格式错误", 0)
+		return message, ResponseResult(100001, "消息格式错误", 0)
 	}
-	return Response(message)
+	if message.Action == Subscribe {
+		return message, nil
+	}
+	return message, Response(message)
+}
+
+// 将消息转发给订阅者
+func SendMessageToSubscribers(message ReceiveMessage) {
+	// 获取订阅者列表
+	clients := subscribeClients[message.Topic]
+	// 遍历订阅者列表
+	for k := range clients {
+		// 发送消息
+		err := gotool.WriteTCPResponse(*k, message.Data)
+		if err != nil {
+			gotool.LogError("Send MessageTo Subscriber Error :", err)
+		}
+	}
 }
 
 // 响应函数
-func Response(message *ReceiveMessage) []byte {
+func Response(message ReceiveMessage) []byte {
 	switch {
 	// 生产消息
 	case message.Action == Product:
@@ -65,6 +84,8 @@ func Response(message *ReceiveMessage) []byte {
 		if err != nil {
 			return ResponseResult(100051, err.Error(), 0)
 		}
+		// 将消息转发给订阅者
+		SendMessageToSubscribers(message)
 		return ResponseResult(0, "消息提交成功", Product)
 
 	// 消费消息
@@ -194,7 +215,8 @@ func Response(message *ReceiveMessage) []byte {
 			return ResponseResult(100402, "状态获取失败", 0)
 		}
 		return ResponseResult(0, string(dataByte), SeverStatus)
-
+	case message.Action == Subscribe:
+		return nil
 	// 默认响应
 	default:
 		return ResponseResult(100404, "消息类型错误", 0)

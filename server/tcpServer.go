@@ -2,6 +2,7 @@ package server
 
 import (
 	"net"
+	"sync"
 
 	"github.com/cnlesscode/firstMQ/configs"
 	"github.com/cnlesscode/firstMQ/kernel"
@@ -9,6 +10,9 @@ import (
 
 	serverFinderClient "github.com/cnlesscode/serverFinder/client"
 )
+
+var subscribeClientsMutex sync.RWMutex = sync.RWMutex{}
+var subscribeClients map[string]map[*net.Conn]int = map[string]map[*net.Conn]int{}
 
 // TCPServer TCP服务器结构
 type TCPServer struct {
@@ -50,11 +54,25 @@ func (t *TCPServer) Handle(conn net.Conn) {
 			conn.Close()
 			break
 		}
-		// 输出响应
-		err = gotool.WriteTCPResponse(conn, TCPResponse(content))
-		if err != nil {
-			conn.Close()
-			break
+
+		// 解析消息
+		message, messageByte := TCPResponse(content)
+		// 订阅事件
+		if message.Action == Subscribe {
+			subscribeClientsMutex.Lock()
+			if _, ok := subscribeClients[message.Topic]; ok {
+				subscribeClients[message.Topic][&conn] = 1
+			} else {
+				subscribeClients[message.Topic] = map[*net.Conn]int{&conn: 1}
+			}
+			subscribeClientsMutex.Unlock()
+		} else {
+			// 输出响应
+			err = gotool.WriteTCPResponse(conn, messageByte)
+			if err != nil {
+				conn.Close()
+				break
+			}
 		}
 	}
 }

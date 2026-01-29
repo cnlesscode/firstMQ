@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/cnlesscode/firstMQ/configs"
@@ -20,9 +19,6 @@ type HttpReceiveMessage struct {
 	Data          string
 	ConsumerGroup string
 }
-
-var subscribeClientsMutex sync.RWMutex = sync.RWMutex{}
-var subscribeClients map[string]map[*websocket.Conn]int = map[string]map[*websocket.Conn]int{}
 
 func StartWSServer() {
 
@@ -45,39 +41,6 @@ func StartWSServer() {
 	ge.SetTrustedProxies([]string{"*"})
 
 	// 提升 HTTP 服务为 websocket 服务
-	// 订阅服务
-	ge.GET("/subscribe", func(ctx *gin.Context) {
-		var upgrader = websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool { return true },
-		}
-		// 开始服务为 websocket
-		conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
-		if err != nil {
-			gotool.LogError(
-				"Upgrading HTTP to WebSocket service failed! ",
-				err)
-			return
-		}
-		topicName := ctx.Query("topicName")
-		subscribeClientsMutex.Lock()
-		if _, ok := subscribeClients[topicName]; ok {
-			subscribeClients[topicName][conn] = 1
-		}
-		subscribeClientsMutex.Unlock()
-		// 接收消息
-		for {
-			_, _, err := conn.ReadMessage()
-			if err != nil {
-				subscribeClientsMutex.Lock()
-				if _, ok := subscribeClients[topicName]; ok {
-					delete(subscribeClients[topicName], conn)
-				}
-				subscribeClientsMutex.Unlock()
-				break
-			}
-		}
-	})
-
 	// 核心服务
 	ge.GET("/", func(ctx *gin.Context) {
 		var upgrader = websocket.Upgrader{
@@ -111,7 +74,7 @@ func StartWSServer() {
 				Topic:         messageTmp.Topic,
 			}
 			message, _ = json.Marshal(messageForKernel)
-			responseMessage := TCPResponse(message)
+			_, responseMessage := TCPResponse(message)
 			conn.WriteMessage(messageType, responseMessage)
 		}
 	})
