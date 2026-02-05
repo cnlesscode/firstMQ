@@ -12,8 +12,12 @@ import (
 )
 
 var subscribeClientsMutex sync.RWMutex = sync.RWMutex{}
-var subscribeClients map[string]map[*net.Conn]int = map[string]map[*net.Conn]int{}
 
+/*
+订阅客户端连接池
+subscribeClients map[话题]map[订阅者IP]map[*net.Conn]int
+*/
+var subscribeClients map[string]map[string]map[*net.Conn]int
 // TCPServer TCP服务器结构
 type TCPServer struct {
 	listener net.Listener
@@ -80,10 +84,11 @@ func (t *TCPServer) Handle(conn net.Conn) {
 // 开启 TCP 服务
 func StartFirstMQTcpServer() {
 	// 1. 注册服务到 ServerFinder
-	serverFinderClient.Register(
+	serverFinderClient.Regist(
 		configs.ServerFinderConfig.Host+":"+configs.ServerFinderConfig.Port,
 		configs.ServerFinderVarKey,
 		configs.CurrentIP+":"+configs.FirstMQConfig.Port,
+		nil,
 	)
 	// 2. 初始化 FirstMQ 话题
 	kernel.LoadTopics()

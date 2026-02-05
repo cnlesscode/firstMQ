@@ -34,4 +34,5 @@ type MQPool struct {
 	CapacityForNode int                // 每个节点连接池总容量
 	ErrorMessage    chan []byte        // 错误消息临时记录通道
 	ServerStatus    map[string]bool    // 服务器状态
+	FirstInitSatus  bool
 }

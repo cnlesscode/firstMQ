@@ -11,7 +11,17 @@ func (m *MQPool) GetAConnection() (*MQConnection, error) {
 	select {
 	case tcpConnection := <-m.Connections:
 		return tcpConnection, nil
-	case <-time.After(time.Second):
+	default:
+	}
+
+	// 没有获取到有效连接
+	// 等待100毫秒继续尝试获取
+	timer := time.NewTimer(100 * time.Millisecond)
+	defer timer.Stop()
+	select {
+	case tcpConnection := <-m.Connections:
+		return tcpConnection, nil
+	case <-timer.C:
 		return nil, errors.New("无法获取有效连接 E200103")
 	}
 }

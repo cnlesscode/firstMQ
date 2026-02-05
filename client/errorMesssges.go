@@ -14,8 +14,13 @@ func RetryErrorMessages(mqPoolIn *MQPool) {
 				continue
 			}
 			// 启动对应连接数数量的协程重发错误消息
+			maxWorkers := mqPoolIn.CapacityForNode * len(mqPoolIn.Addresses)
+			workers := errorMessagesCount
+			if errorMessagesCount > maxWorkers {
+				workers = maxWorkers
+			}
 			var wg sync.WaitGroup
-			for i := 0; i < mqPoolIn.CapacityForNode*len(mqPoolIn.Addresses); i++ {
+			for i := 0; i < workers; i++ {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()

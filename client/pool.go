@@ -12,28 +12,29 @@ import (
 // 建立连接池 :
 // ServerFinderAddr  ServerFinder 服务地址,
 // capacity 每个节点连接池容量,
-func New(ServerFinderAddr string, capacityForNode int) (*MQPool, error) {
+
+func New(ServerFinderAddr string, capacityForNode int) *MQPool {
 	// 新建连接池
 	mqPool := &MQPool{
 		ServerFindAddr: ServerFinderAddr,
 		Addresses:      nil,
 		// 总连接池 [ 缓存管道 ]
-		Connections: make(chan *MQConnection, 100000),
+		Connections: make(chan *MQConnection, 10000),
 		// 坏的连接池
-		BadConnections:  make(chan *MQConnection, 100000),
+		BadConnections:  make(chan *MQConnection, 10000),
 		CapacityForNode: capacityForNode,
-		ErrorMessage:    make(chan []byte, 1000000),
+		ErrorMessage:    make(chan []byte, 100000),
 		ServerStatus:    make(map[string]bool),
+		FirstInitSatus:  false,
 	}
 
-	// 创建监听
+	// 创建监听并初始化连接池
 	go func(mqPoolIn *MQPool) {
-		time.Sleep(time.Second * 5)
 		serverFinderClient.Listen(
 			ServerFinderAddr,
 			configs.ServerFinderVarKey,
 			func(message map[string]int) {
-				gotool.LogDebug("Server node changes : ", message)
+				gotool.LogDebug("FirstMQ Server Nodes Changed : ", message)
 				if len(message) < 1 {
 					return
 				}
@@ -42,10 +43,12 @@ func New(ServerFinderAddr string, capacityForNode int) (*MQPool, error) {
 		)
 	}(mqPool)
 
-	// 初始化连接池
-	err := mqPool.Init(nil)
-	if err != nil {
-		return mqPool, err
+	// 等待连接池初始化完成
+	for {
+		time.Sleep(time.Millisecond * 100)
+		if mqPool.FirstInitSatus {
+			break
+		}
 	}
 
 	// 监听错误消息并自动发送
@@ -75,30 +78,20 @@ func New(ServerFinderAddr string, capacityForNode int) (*MQPool, error) {
 		}
 	}(mqPool)
 
-	return mqPool, err
+	return mqPool
 }
 
 func (m *MQPool) Init(addrs map[string]int) error {
 
 	// 1. 记录旧的节点列表
 	oldAddresses := m.Addresses
+	m.Addresses = addrs
 
-	// 2. 没有传递服务地址，则从服务发现中获取
-	if addrs == nil {
-		// 整理服务地址
-		err := m.GetMQServerAddresses()
-		if err != nil {
-			return errors.New("无可用服务 E10001")
-		}
-	} else {
-		m.Addresses = addrs
-	}
-
-	// 3. 检查服务器可用状态，不可用则移除
+	// 2. 检查服务器可用状态，不可用则移除
 	for k := range m.Addresses {
 		connIn, err := NewAConn(k)
 		if err != nil {
-			// 从地址map中移除
+			// 从地址 map 中移除
 			delete(m.Addresses, k)
 		} else {
 			connIn.Close()
@@ -109,7 +102,7 @@ func (m *MQPool) Init(addrs map[string]int) error {
 		return errors.New("无可用服务 E10002")
 	}
 
-	// 4. 如果有服务器节点掉线，发现并标注其状态
+	// 3. 如果有服务器节点掉线，发现并标注其状态
 	for k := range oldAddresses {
 		// 查找该节点是否在最新的服务器地址列表中
 		if _, ok := m.Addresses[k]; !ok {
@@ -119,7 +112,7 @@ func (m *MQPool) Init(addrs map[string]int) error {
 		}
 	}
 
-	// 5. 遍历各个节点, 创建对应连接, 填充到连接池
+	// 4. 遍历各个节点, 创建对应连接, 填充到连接池
 	for addr := range m.Addresses {
 		// 新的节点
 		if _, ok := oldAddresses[addr]; !ok {
@@ -131,5 +124,6 @@ func (m *MQPool) Init(addrs map[string]int) error {
 		}
 	}
 
+	m.FirstInitSatus = true
 	return nil
 }

@@ -14,23 +14,8 @@ import (
 var subscribeServerConnections map[string]*MQConnection = make(map[string]*MQConnection)
 
 // 客户端订阅话题
-func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg []byte)) {
-	// 获取集群服务器地址
-	res, err := serverFinderClient.Get(ServerFinderAddr, configs.ServerFinderVarKey)
-	if err != nil {
-		return
-	}
-	addresses := make(map[string]int)
-	err = json.Unmarshal([]byte(res), &addresses)
-	if err != nil {
-		return
-	}
-	for k := range addresses {
-		go subscribeBase(k, topicName, onMessage)
-	}
-
-	// 监听服务器组
-	time.Sleep(time.Second * 10)
+// 订阅端在服务端以连接池形式存储
+func Subscribe(ServerFinderAddr, topicName string, poolSize int, onMessage func(msg []byte)) {
 	serverFinderClient.Listen(
 		ServerFinderAddr,
 		configs.ServerFinderVarKey,
@@ -38,6 +23,10 @@ func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg []byte)) {
 			gotool.LogDebug("Server node changes : ", message)
 			if len(message) < 1 {
 				return
+			}
+			for k := range message {
+				// 创建订阅任务
+				go subscribeBase(k, topicName, onMessage)
 			}
 		},
 	)
@@ -63,13 +52,13 @@ SubscribeLoop:
 		Data:          []byte(topicName),
 		Topic:         topicName,
 	}
+
 	msgByte, _ := json.Marshal(subscribeMessage)
 	err = gotool.WriteTCPResponse(conn, msgByte)
 	if err != nil {
 		time.Sleep(time.Second)
 		goto SubscribeLoop
 	}
-	gotool.LogOk("ok")
 	// 持续监听消息的循环
 	for {
 		resp, err := gotool.ReadTCPResponse(conn)

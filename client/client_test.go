@@ -9,15 +9,12 @@ import (
 	"time"
 )
 
-var addr string = "192.168.0.185:8881"
+var serverFinderAddr string = "192.168.0.185:8881"
 
 // 初始化连接池
 // go test -v -run=TestInitPool
 func TestInitPool(t *testing.T) {
-	mqPool, err := New(addr, 2)
-	if err != nil {
-		panic(err.Error())
-	}
+	mqPool := New(serverFinderAddr, 2)
 	fmt.Printf("mqPool 节点服务器数量: %v\n", len(mqPool.Addresses))
 	for {
 		time.Sleep(time.Second * 5)
@@ -27,10 +24,7 @@ func TestInitPool(t *testing.T) {
 // 创建话题
 // go test -v -run=TestCreateATopic
 func TestCreateATopic(t *testing.T) {
-	mqPool, err := New(addr, 1)
-	if err != nil {
-		panic(err.Error())
-	}
+	mqPool := New(serverFinderAddr, 1)
 	// 延迟等待连接池填充
 	// 生成环境无需延迟
 	time.Sleep(time.Second * 1)
@@ -46,10 +40,7 @@ func TestCreateATopic(t *testing.T) {
 // 生产消息 - 单条
 // go test -v -run=TestProductAMessage
 func TestProductAMessage(t *testing.T) {
-	mqPool, err := New(addr, 1)
-	if err != nil {
-		panic(err.Error())
-	}
+	mqPool := New(serverFinderAddr, 1)
 	// 延迟等待连接池填充
 	// 生成环境无需延迟
 	time.Sleep(time.Second * 1)
@@ -65,20 +56,17 @@ func TestProductAMessage(t *testing.T) {
 // 生产消息 - 并发多条
 // go test -v -run=TestProductMessages
 func TestProductMessages(t *testing.T) {
-	mqPool, err := New(addr, 100)
-	if err != nil {
-		panic(err.Error())
-	}
+	mqPool := New(serverFinderAddr, 100)
 	// 循环批量生产消息
 	for i := 0; i < 5; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
-		for ii := 1; ii <= 100; ii++ {
+		for ii := 1; ii <= 20000; ii++ {
 			n := i*10000 + ii
 			wg.Add(1)
 			go func(iin int) {
 				defer wg.Done()
-				_, err = mqPool.Product("default", []byte(strconv.Itoa(iin)+" test message ..."))
+				_, err := mqPool.Product("default", []byte(strconv.Itoa(iin)+" test message ..."))
 				if err != nil {
 					fmt.Printf("err 0001: %v\n", err.Error())
 				}
@@ -102,10 +90,7 @@ func TestProductMessages(t *testing.T) {
 
 // go test -v -run=TestConsumeMessage
 func TestConsumeMessage(t *testing.T) {
-	mqPool, err := New(addr, 100)
-	if err != nil {
-		panic(err.Error())
-	}
+	mqPool := New(serverFinderAddr, 1)
 	// 启动 100个协程
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
@@ -123,10 +108,7 @@ func TestConsumeMessage(t *testing.T) {
 
 // go test -v -run=TestCreateConsumeGroup
 func TestCreateConsumeGroup(t *testing.T) {
-	mqPool, err := New(addr, 1)
-	if err != nil {
-		panic(err.Error())
-	}
+	mqPool := New(serverFinderAddr, 1)
 	// 延迟等待连接池填充
 	// 生成环境无需延迟
 	time.Sleep(time.Second * 1)
@@ -141,10 +123,7 @@ func TestCreateConsumeGroup(t *testing.T) {
 
 // go test -v -run=TestServerList
 func TestServerList(t *testing.T) {
-	mqPool, err := New(addr, 1)
-	if err != nil {
-		panic(err.Error())
-	}
+	mqPool := New(serverFinderAddr, 1)
 	// 延迟等待连接池填充
 	// 生成环境无需延迟
 	time.Sleep(time.Second * 1)
@@ -167,14 +146,27 @@ func TestServerList(t *testing.T) {
 
 // go test -v -run=TestTopicList
 func TestTopicList(t *testing.T) {
-	mqPool, err := New(addr, 10)
-	if err != nil {
-		panic(err.Error())
-	}
+	mqPool := New(serverFinderAddr, 1)
 	response, err := mqPool.GetTopicList()
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	} else {
 		fmt.Printf("response.Data: %v\n", response.Data)
+	}
+}
+
+func subscribeOnMessage(message []byte) {
+	fmt.Printf("Received message : %s", message)
+}
+
+// go test -v -run=TestSubscribe
+func TestSubscribe(t *testing.T) {
+	// 注意 : Subscribe是异步执行的
+	Subscribe(serverFinderAddr,
+		"default",
+		10,
+		subscribeOnMessage)
+	for {
+		time.Sleep(time.Second)
 	}
 }
