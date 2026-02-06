@@ -20,13 +20,15 @@ func Subscribe(ServerFinderAddr, topicName string, poolSize int, onMessage func(
 		ServerFinderAddr,
 		configs.ServerFinderVarKey,
 		func(message map[string]int) {
-			gotool.LogDebug("Server node changes : ", message)
 			if len(message) < 1 {
 				return
 			}
 			for k := range message {
 				// 创建订阅任务
-				go subscribeBase(k, topicName, onMessage)
+				for i := 0; i < poolSize; i++ {
+					// 创建订阅任务
+					go subscribeBase(k, topicName, onMessage)
+				}
 			}
 		},
 	)
@@ -49,7 +51,7 @@ SubscribeLoop:
 	subscribeMessage := Message{
 		Action:        server.Subscribe,
 		ConsumerGroup: "default",
-		Data:          []byte(topicName),
+		Data:          nil,
 		Topic:         topicName,
 	}
 
@@ -68,14 +70,10 @@ SubscribeLoop:
 			gotool.LogError("连接断开，尝试重连")
 			break
 		}
-		if err != nil {
-			continue // 跳过错误消息，继续监听
-		}
 		if onMessage != nil {
 			onMessage(resp)
 		}
 	}
-	gotool.LogError(".....")
 	// 断线重连
 	time.Sleep(time.Second)
 	goto SubscribeLoop

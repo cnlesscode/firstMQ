@@ -66,10 +66,7 @@ func TestProductMessages(t *testing.T) {
 			wg.Add(1)
 			go func(iin int) {
 				defer wg.Done()
-				_, err := mqPool.Product("default", []byte(strconv.Itoa(iin)+" test message ..."))
-				if err != nil {
-					fmt.Printf("err 0001: %v\n", err.Error())
-				}
+				mqPool.Product("default", []byte(strconv.Itoa(iin)+" test message ..."))
 			}(n)
 		}
 		wg.Wait()
@@ -156,7 +153,7 @@ func TestTopicList(t *testing.T) {
 }
 
 func subscribeOnMessage(message []byte) {
-	fmt.Printf("Received message : %s", message)
+	fmt.Printf(".")
 }
 
 // go test -v -run=TestSubscribe
@@ -164,7 +161,7 @@ func TestSubscribe(t *testing.T) {
 	// 注意 : Subscribe是异步执行的
 	Subscribe(serverFinderAddr,
 		"default",
-		10,
+		100,
 		subscribeOnMessage)
 	for {
 		time.Sleep(time.Second)

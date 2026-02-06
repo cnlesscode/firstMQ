@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/cnlesscode/firstMQ/kernel"
-	"github.com/cnlesscode/gotool"
 )
 
 // 消息类型
@@ -58,20 +57,6 @@ func TCPResponse(msg []byte) (ReceiveMessage, []byte) {
 	return message, Response(message)
 }
 
-// 将消息转发给订阅者
-func SendMessageToSubscribers(message ReceiveMessage) {
-	// 获取订阅者列表
-	clients := subscribeClients[message.Topic]
-	// 遍历订阅者列表
-	for k := range clients {
-		// 发送消息
-		err := gotool.WriteTCPResponse(*k, message.Data)
-		if err != nil {
-			gotool.LogError("Send MessageTo Subscriber Error :", err)
-		}
-	}
-}
-
 // 响应函数
 func Response(message ReceiveMessage) []byte {
 	switch {
@@ -85,7 +70,7 @@ func Response(message ReceiveMessage) []byte {
 			return ResponseResult(100051, err.Error(), 0)
 		}
 		// 将消息转发给订阅者
-		SendMessageToSubscribers(message)
+		go SendMessageToSubscribers(message)
 		return ResponseResult(0, "消息提交成功", Product)
 
 	// 消费消息
