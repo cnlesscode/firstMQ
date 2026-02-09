@@ -13,7 +13,6 @@ func (m *MQPool) GetAConnection() (*MQConnection, error) {
 		return tcpConnection, nil
 	default:
 	}
-
 	// 没有获取到有效连接
 	// 等待100毫秒继续尝试获取
 	timer := time.NewTimer(100 * time.Millisecond)

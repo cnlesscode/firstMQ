@@ -15,20 +15,20 @@ func (mqPool *MQPool) Product(topic string, data []byte) (ResponseMessage, error
 }
 
 // 消费消息
-func (mqPool *MQPool) Consume(topic, ConsumerGroup string) (ResponseMessage, error) {
+func (mqPool *MQPool) Consume(topic, consumerGroup string) (ResponseMessage, error) {
 	return mqPool.Send(Message{
 		Action:        2,
 		Topic:         topic,
-		ConsumerGroup: ConsumerGroup,
+		ConsumerGroup: consumerGroup,
 	})
 }
 
 // 创建消费者组
-func (mqPool *MQPool) CreateConsumerGroup(topic, ConsumerGroup string) (ResponseMessage, error) {
+func (mqPool *MQPool) CreateConsumerGroup(topic, consumerGroup string) (ResponseMessage, error) {
 	return mqPool.Send(Message{
 		Action:        7,
 		Topic:         topic,
-		ConsumerGroup: ConsumerGroup,
+		ConsumerGroup: consumerGroup,
 	})
 }
 

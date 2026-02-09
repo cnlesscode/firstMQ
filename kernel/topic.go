@@ -64,7 +64,7 @@ func LoadTopics() {
 	FillMessagesToConsumeChannel()
 
 	// 记录日志
-	gotool.LogOk("FirstMQ : Topic initialization successful")
+	gotool.LogOk("FirstMQ : Topic initialization successful.")
 }
 
 // 创建话题

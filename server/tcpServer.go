@@ -6,9 +6,15 @@ import (
 	"github.com/cnlesscode/firstMQ/configs"
 	"github.com/cnlesscode/firstMQ/kernel"
 	"github.com/cnlesscode/gotool"
+	"github.com/google/uuid"
 
 	serverFinderClient "github.com/cnlesscode/serverFinder/client"
 )
+
+// TCPServer TCP服务器结构
+type TCPServer struct {
+	listener net.Listener
+}
 
 // 创建TCP服务器
 func NewTCPServer(addr string) *TCPServer {
@@ -39,38 +45,52 @@ func (t *TCPServer) Accept() {
 
 // Handle 处理客户端连接
 func (t *TCPServer) Handle(conn net.Conn) {
+	message := ReceiveMessage{}
+	messageByte := []byte{}
+	subscribeTopic := ""
+	subscribeClientId := ""
 	for {
 		content, err := gotool.ReadTCPResponse(conn)
 		if err != nil {
 			conn.Close()
+			if subscribeClientId != "" && subscribeTopic != "" {
+				subscribeClientsMutex.Lock()
+				if _, exist := subscribeClients[subscribeTopic]; exist {
+					delete(subscribeClients[subscribeTopic], subscribeClientId)
+					if len(subscribeClients[subscribeTopic]) == 0 {
+						delete(subscribeClients, subscribeTopic)
+					}
+				}
+				subscribeClientsMutex.Unlock()
+			}
 			break
 		}
 
 		// 解析消息
-		message, messageByte := TCPResponse(content)
+		message, messageByte = TCPResponse(content)
 		// 订阅事件
 		if message.Action == Subscribe {
-			// 提取纯 IP（不含端口）
+			// 提取 IP
 			remoteTCPAddr, ok := conn.RemoteAddr().(*net.TCPAddr)
 			if !ok {
 				conn.Close()
 				break
 			}
 			clientIP := remoteTCPAddr.IP.String()
-
+			subscribeClientId = uuid.New().String()
+			subscribeTopic = message.Topic
 			subscribeClientsMutex.Lock()
-			if _, exist := subscribeClients[message.Topic]; !exist {
-				subscribeClients[message.Topic] = make(map[string]chan *SubscribeClient)
+			if _, exist := subscribeClients[subscribeTopic]; !exist {
+				subscribeClients[subscribeTopic] = make(map[string]*SubscribeClient)
 			}
-			if _, exist := subscribeClients[message.Topic][clientIP]; !exist {
-				subscribeClients[message.Topic][clientIP] = make(chan *SubscribeClient, 10000)
-			}
-			subscribeClientsMutex.Unlock()
-			subscribeClients[message.Topic][clientIP] <- NewASubscribeClient(
+
+			subscribeClients[subscribeTopic][subscribeClientId] = NewASubscribeClient(
 				conn,
-				message.Topic,
+				subscribeTopic,
 				clientIP,
+				subscribeClientId,
 			)
+			subscribeClientsMutex.Unlock()
 
 		} else {
 			// 输出响应

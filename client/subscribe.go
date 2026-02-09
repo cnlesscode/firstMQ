@@ -15,7 +15,7 @@ var subscribeServerConnections map[string]*MQConnection = make(map[string]*MQCon
 
 // 客户端订阅话题
 // 订阅端在服务端以连接池形式存储
-func Subscribe(ServerFinderAddr, topicName string, poolSize int, onMessage func(msg []byte)) {
+func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg []byte)) {
 	serverFinderClient.Listen(
 		ServerFinderAddr,
 		configs.ServerFinderVarKey,
@@ -25,10 +25,7 @@ func Subscribe(ServerFinderAddr, topicName string, poolSize int, onMessage func(
 			}
 			for k := range message {
 				// 创建订阅任务
-				for i := 0; i < poolSize; i++ {
-					// 创建订阅任务
-					go subscribeBase(k, topicName, onMessage)
-				}
+				go subscribeBase(k, topicName, onMessage)
 			}
 		},
 	)
@@ -67,7 +64,6 @@ SubscribeLoop:
 		if err != nil {
 			// 连接断开，尝试重连
 			conn.Close()
-			gotool.LogError("连接断开，尝试重连")
 			break
 		}
 		if onMessage != nil {

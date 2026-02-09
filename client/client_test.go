@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -58,10 +59,10 @@ func TestProductAMessage(t *testing.T) {
 func TestProductMessages(t *testing.T) {
 	mqPool := New(serverFinderAddr, 100)
 	// 循环批量生产消息
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
-		for ii := 1; ii <= 20000; ii++ {
+		for ii := 1; ii <= 10000; ii++ {
 			n := i*10000 + ii
 			wg.Add(1)
 			go func(iin int) {
@@ -152,8 +153,13 @@ func TestTopicList(t *testing.T) {
 	}
 }
 
+var counter int64
+
 func subscribeOnMessage(message []byte) {
-	fmt.Printf(".")
+	c := atomic.AddInt64(&counter, 1)
+	if c%50000 == 0 {
+		fmt.Printf("Received %d messages\n", c)
+	}
 }
 
 // go test -v -run=TestSubscribe
@@ -161,7 +167,6 @@ func TestSubscribe(t *testing.T) {
 	// 注意 : Subscribe是异步执行的
 	Subscribe(serverFinderAddr,
 		"default",
-		100,
 		subscribeOnMessage)
 	for {
 		time.Sleep(time.Second)
