@@ -49,7 +49,7 @@ func ReadMessages(
 	}
 	messages := make([]MessageForRead, 0)
 	for k, dataLogPath := range dataLogPaths {
-		f, err := os.OpenFile(dataLogPath, os.O_RDONLY, 0666)
+		f, err := os.OpenFile(dataLogPath, os.O_RDONLY, 0644)
 		for _, offsets := range messageOffsetMap[k] {
 			if err != nil {
 				messages = append(messages, MessageForRead{Index: startIndex, Data: nil})
@@ -78,7 +78,10 @@ type MessageOffsetStruct struct {
 	Length int64
 }
 
-func GetMessageIndexData(topicName string, startIndex, length int64) ([]string, map[int][]MessageOffsetStruct, error) {
+func GetMessageIndexData(
+	topicName string,
+	startIndex,
+	length int64) ([]string, map[int][]MessageOffsetStruct, error) {
 
 	indexData := make(map[int][]MessageOffsetStruct, 0)
 	dataLogPaths := make([]string, 0)
@@ -96,7 +99,7 @@ func GetMessageIndexData(topicName string, startIndex, length int64) ([]string, 
 		dataLogPaths = append(dataLogPaths, logFilePath)
 		indexData[0] = make([]MessageOffsetStruct, 0)
 		// 打开数据索引文件
-		indexFile, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0777)
+		indexFile, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0644)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -108,7 +111,9 @@ func GetMessageIndexData(topicName string, startIndex, length int64) ([]string, 
 			binary.Read(indexFile, binary.LittleEndian, &offsetStart)
 			var Length int64 = 0
 			binary.Read(indexFile, binary.LittleEndian, &Length)
-			indexData[0] = append(indexData[0], MessageOffsetStruct{Start: offsetStart, Length: Length})
+			indexData[0] = append(
+				indexData[0],
+				MessageOffsetStruct{Start: offsetStart, Length: Length})
 		}
 		return dataLogPaths, indexData, nil
 	}
@@ -118,7 +123,7 @@ func GetMessageIndexData(topicName string, startIndex, length int64) ([]string, 
 	dataLogPaths = append(dataLogPaths, logFilePath)
 	indexData[0] = make([]MessageOffsetStruct, 0)
 	// 打开数据索引文件
-	indexFile, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0777)
+	indexFile, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0644)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -130,7 +135,9 @@ func GetMessageIndexData(topicName string, startIndex, length int64) ([]string, 
 		binary.Read(indexFile, binary.LittleEndian, &offsetStart)
 		var Length int64 = 0
 		binary.Read(indexFile, binary.LittleEndian, &Length)
-		indexData[0] = append(indexData[0], MessageOffsetStruct{Start: offsetStart, Length: Length})
+		indexData[0] = append(
+			indexData[0],
+			MessageOffsetStruct{Start: offsetStart, Length: Length})
 	}
 	indexFile.Close()
 
@@ -144,7 +151,7 @@ func GetMessageIndexData(topicName string, startIndex, length int64) ([]string, 
 	dataLogPaths = append(dataLogPaths, logFilePath)
 	indexData[1] = make([]MessageOffsetStruct, 0)
 	// 打开数据索引文件
-	indexFile2, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0777)
+	indexFile2, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0644)
 	if err != nil {
 		return dataLogPaths, indexData, nil
 	}
@@ -155,7 +162,9 @@ func GetMessageIndexData(topicName string, startIndex, length int64) ([]string, 
 		binary.Read(indexFile2, binary.LittleEndian, &offsetStart)
 		var Length int64 = 0
 		binary.Read(indexFile2, binary.LittleEndian, &Length)
-		indexData[1] = append(indexData[1], MessageOffsetStruct{Start: offsetStart, Length: Length})
+		indexData[1] = append(
+			indexData[1],
+			MessageOffsetStruct{Start: offsetStart, Length: Length})
 	}
 	indexFile2.Close()
 	return dataLogPaths, indexData, nil

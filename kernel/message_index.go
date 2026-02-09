@@ -17,7 +17,7 @@ func GetSaveIndex(topicName string) (int64, error) {
 		topicName,
 		"save_index.bin",
 	)
-	f, err := os.OpenFile(saveIndexFilePath, os.O_RDONLY, 0777)
+	f, err := os.OpenFile(saveIndexFilePath, os.O_RDONLY, 0644)
 	if err != nil {
 		return 0, err
 	}
@@ -94,7 +94,7 @@ func (m *ConsumeMessagesChannel) SaveConsumeIndexToFile() {
 				time.Sleep(time.Millisecond * 200)
 				continue
 			}
-			f, err := os.OpenFile(mIn.ConsumeIndexFilePath, os.O_WRONLY, 0777)
+			f, err := os.OpenFile(mIn.ConsumeIndexFilePath, os.O_WRONLY, 0644)
 			if err != nil {
 				time.Sleep(time.Millisecond * 200)
 				continue

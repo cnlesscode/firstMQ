@@ -68,7 +68,7 @@ func Init() {
 	GlobalDataDir = path.Join(gotool.Root, iniReader.String("", "GlobalDataDirName"))
 	// 2.1 检查全局数据目录
 	if !gfs.DirExists(GlobalDataDir) {
-		err := os.Mkdir(GlobalDataDir, 0777)
+		err := os.Mkdir(GlobalDataDir, 0644)
 		if err != nil {
 			panic("数据目录创建失败: " + err.Error() + "\n")
 		}

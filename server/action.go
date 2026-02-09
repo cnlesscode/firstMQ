@@ -93,14 +93,23 @@ func Response(message ReceiveMessage) []byte {
 		if err != nil {
 			return ResponseResult(100301, err.Error(), 0)
 		}
-		return ResponseResult(0, "话题 : "+message.Topic+" 创建成功", CreateTopic)
+		return ResponseResult(
+			0,
+			"话题 : "+message.Topic+" 创建成功",
+			CreateTopic)
 	// 创建话题 [ 本机 ]
 	case message.Action == CreateTopicForLocal:
 		err := kernel.CreateTopic(message.Topic)
 		if err != nil {
-			return ResponseResult(100301, err.Error(), 0)
+			return ResponseResult(
+				100301,
+				err.Error(),
+				0)
 		}
-		return ResponseResult(0, "话题 : "+message.Topic+" 创建成功", CreateTopicForLocal)
+		return ResponseResult(
+			0,
+			"话题 : "+message.Topic+" 创建成功",
+			CreateTopicForLocal)
 
 	// 创建消费者组 [本机]
 	case message.Action == CreateConsumeGroupForLocal:
@@ -109,14 +118,22 @@ func Response(message ReceiveMessage) []byte {
 			return ResponseResult(100300, err.Error(), 0)
 		}
 		// 自己创建完毕后，通知集群其他服务器端，同步创建
-		return ResponseResult(0, "消费者组 : "+message.ConsumerGroup+" 创建成功", CreateConsumeGroupForLocal)
+		return ResponseResult(
+			0,
+			"消费者组 : "+message.ConsumerGroup+" 创建成功",
+			CreateConsumeGroupForLocal)
 	// 创建消费者组 [集群]
 	case message.Action == CreateConsumeGroup:
-		err := kernel.CreateConsumeGroupForClusters(message.Topic, message.ConsumerGroup)
+		err := kernel.CreateConsumeGroupForClusters(
+			message.Topic,
+			message.ConsumerGroup)
 		if err != nil {
 			return ResponseResult(100301, err.Error(), 0)
 		}
-		return ResponseResult(0, "消费者组 : "+message.ConsumerGroup+" 创建成功", CreateConsumeGroup)
+		return ResponseResult(
+			0,
+			"消费者组 : "+message.ConsumerGroup+" 创建成功",
+			CreateConsumeGroup)
 
 	// 查询话题列表
 	case message.Action == TopicList:
@@ -170,13 +187,19 @@ func Response(message ReceiveMessage) []byte {
 		}
 		dataByte, err := json.Marshal(data)
 		if err != nil {
-			return ResponseResult(100404, "服务器内部错误", 0)
+			return ResponseResult(
+				100404,
+				"服务器内部错误",
+				0)
 		}
 		return ResponseResult(0, string(dataByte), SeverStatusLocal)
 	case message.Action == SeverStatus:
 		nodes, err := kernel.GetClusterNodes()
 		if err != nil {
-			return ResponseResult(100401, "服务器列表获取失败 : "+err.Error(), 0)
+			return ResponseResult(
+				100401,
+				"服务器列表获取失败 : "+err.Error(),
+				0)
 		}
 		returnData := make(map[string]map[string]any, 0)
 		for node := range nodes {
@@ -197,14 +220,20 @@ func Response(message ReceiveMessage) []byte {
 		}
 		dataByte, err := json.Marshal(returnData)
 		if err != nil {
-			return ResponseResult(100402, "状态获取失败", 0)
+			return ResponseResult(
+				100402,
+				"状态获取失败",
+				0)
 		}
 		return ResponseResult(0, string(dataByte), SeverStatus)
 	case message.Action == Subscribe:
 		return nil
 	// 默认响应
 	default:
-		return ResponseResult(100404, "消息类型错误", 0)
+		return ResponseResult(
+			100404,
+			"消息类型错误",
+			0)
 	}
 }
 

@@ -42,11 +42,11 @@ func Consume(topicName string, consumerGroup string) ([]byte, error) {
 func CreateConsumerGroup(topicName, consumerGroup string) error {
 	// 检查话题合理性
 	if _, ok := TopicList[topicName]; !ok {
-		return errors.New("话题 " + topicName + "不存在")
+		return errors.New("Topic Name [ " + topicName + " ] does not exist!")
 	}
 	// 名称检查
 	if err := CheckTopicName(consumerGroup); err != nil {
-		return errors.New("话题 " + topicName + "名称错误")
+		return errors.New("Consumer Group [ " + consumerGroup + " ] error!")
 	}
 	// 组合键名称
 	consumeIndexMapKey := InitConsumeIndexMapKey(topicName, consumerGroup)
@@ -59,13 +59,13 @@ func CreateConsumerGroup(topicName, consumerGroup string) error {
 	if gfs.FileExists(consumeIndexFilePath) {
 		return nil
 	}
-	//
-	f, err := os.OpenFile(consumeIndexFilePath, os.O_WRONLY|os.O_CREATE, 0777)
+	// 打开日志文件
+	f, err := os.OpenFile(consumeIndexFilePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	err = binary.Write(f, binary.LittleEndian, int64(0))
-	f.Close()
 	if err != nil {
 		return err
 	}

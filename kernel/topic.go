@@ -30,7 +30,7 @@ func LoadTopics() {
 	// GlobalDataDir
 	list, err := os.ReadDir(configs.FirstMQConfig.DataDir)
 	if err != nil {
-		err = os.Mkdir(configs.FirstMQConfig.DataDir, 0777)
+		err = os.Mkdir(configs.FirstMQConfig.DataDir, 0644)
 		if err != nil {
 			panic("✘ 话题数据文件夹创建失败！")
 		}
@@ -115,14 +115,14 @@ func CreateTopicFiles(topicName string) error {
 	}
 	// 1. 创建落盘文件夹
 	if !gfs.DirExists(configs.FirstMQConfig.DataDir) {
-		err := os.Mkdir(configs.FirstMQConfig.DataDir, 0777)
+		err := os.Mkdir(configs.FirstMQConfig.DataDir, 0644)
 		if err != nil {
 			return err
 		}
 	}
 
 	// 2. 创建话题目录
-	err = os.Mkdir(topicDataDir, 0777)
+	err = os.Mkdir(topicDataDir, 0644)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func CreateTopicFiles(topicName string) error {
 	// 3. 创建话题数据目录
 	err = os.Mkdir(
 		path.Join(topicDataDir, "data_logs"),
-		0777,
+		0644,
 	)
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ func CreateTopicFiles(topicName string) error {
 	// 4. 创建存储索引记录文件
 	f, err := os.OpenFile(
 		path.Join(topicDataDir, "save_index.bin"),
-		os.O_RDWR|os.O_CREATE, 0777,
+		os.O_RDWR|os.O_CREATE, 0644,
 	)
 	if err != nil {
 		return err
@@ -154,10 +154,11 @@ func CreateTopicFiles(topicName string) error {
 	// 5. 创建消费索引目录
 	err = os.Mkdir(
 		path.Join(topicDataDir, "consume_logs"),
-		0777,
+		0644,
 	)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
