@@ -66,6 +66,7 @@ func (m *ConsumeMessagesChannel) FillMessages() {
 				time.Sleep(configs.FirstMQConfig.IdleSleepTimeForFillMessage)
 				continue
 			}
+
 			// 将消息填充到消费者消息缓存通道
 			// 当消费者缓存通道满时，阻塞等待
 			for _, message := range messages {

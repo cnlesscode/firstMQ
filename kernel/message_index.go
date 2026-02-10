@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 // 读取存储索引 [ 当前存储最大值 - 整数 ]
 func GetSaveIndex(topicName string) (int64, error) {
-	saveIndexFilePath := path.Join(
+	saveIndexFilePath := filepath.Join(
 		configs.FirstMQConfig.DataDir,
 		topicName,
 		"save_index.bin",
@@ -23,6 +24,7 @@ func GetSaveIndex(topicName string) (int64, error) {
 	}
 	defer f.Close()
 	var saveIndex int64 = 0
+
 	err = binary.Read(f, binary.LittleEndian, &saveIndex)
 	if err != nil {
 		return 0, err
@@ -52,12 +54,12 @@ func InitLogFiles(topicName string, fileIdx int64) (string, string) {
 		configs.FirstMQConfig.DataDir,
 		topicName,
 	)
-	logfilePath := path.Join(
+	logfilePath := filepath.Join(
 		baseDataDir,
 		"data_logs",
 		strconv.FormatInt(fileIdx, 10)+".log",
 	)
-	idxFilePath := path.Join(
+	idxFilePath := filepath.Join(
 		baseDataDir,
 		"data_logs",
 		strconv.FormatInt(fileIdx, 10)+".bin",

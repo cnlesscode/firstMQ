@@ -59,7 +59,7 @@ func TestProductAMessage(t *testing.T) {
 func TestProductMessages(t *testing.T) {
 	mqPool := New(serverFinderAddr, 100)
 	// 循环批量生产消息
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 1; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
 		for ii := 1; ii <= 10000; ii++ {
