@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/cnlesscode/firstMQ/configs"
@@ -11,6 +12,7 @@ import (
 	serverFinderClient "github.com/cnlesscode/serverFinder/client"
 )
 
+var subscribeServerConnectionsMU sync.Mutex
 var subscribeServerConnections map[string]int = make(map[string]int)
 
 // 客户端订阅指定话题
@@ -31,11 +33,14 @@ func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg []byte)) {
 }
 
 func subscribeBase(mqServerAddr, topicName string, onMessage func(msg []byte)) {
+	subscribeServerConnectionsMU.Lock()
 	var keyName = mqServerAddr + "_" + topicName
 	if _, ok := subscribeServerConnections[keyName]; ok {
+		subscribeServerConnectionsMU.Unlock()
 		return
 	}
 	subscribeServerConnections[keyName] = 1
+	subscribeServerConnectionsMU.Unlock()
 SubscribeLoop:
 	// 建立连接
 	conn, err := net.Dial("tcp", mqServerAddr)
