@@ -13,7 +13,7 @@ import (
 	"github.com/cnlesscode/gotool/db"
 )
 
-var serverFinderAddr string = "192.168.0.185:8881"
+var serverFinderAddr string = "192.168.31.189:8881"
 
 // 初始化连接池
 // go test -v -run=TestInitPool
@@ -62,7 +62,7 @@ func TestProductAMessage(t *testing.T) {
 func TestProductMessages(t *testing.T) {
 	mqPool := New(serverFinderAddr, 100)
 	// 循环批量生产消息
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
 		for ii := 0; ii < 10000; ii++ {

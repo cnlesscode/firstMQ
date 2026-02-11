@@ -71,7 +71,6 @@ func (m *ConsumeMessagesChannel) FillMessages() {
 			// 当消费者缓存通道满时，阻塞等待
 			for _, message := range messages {
 				mIn.Channel <- message
-				// 更新消费索引
 			}
 			mIn.FillIndex += messageCount
 		}

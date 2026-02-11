@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"os"
+	"sync"
 
 	"github.com/cnlesscode/firstMQ/configs"
 	"github.com/cnlesscode/gotool/gfs"
@@ -19,12 +20,16 @@ type ConsumeMessagesChannel struct {
 	ConsumeIndex         int64
 }
 
+// 消费消息缓存管道
+var consumeChannelsMu sync.RWMutex = sync.RWMutex{}
+var ConsumeMessageChannels map[string]*ConsumeMessagesChannel = make(map[string]*ConsumeMessagesChannel)
+
 // 消费消息
 func Consume(topicName string, consumerGroup string) ([]byte, error) {
 	// 消息缓存通道键名称
 	keyName := InitConsumeIndexMapKey(topicName, consumerGroup)
 	_, ok := ConsumeMessageChannels[keyName]
-	// 不存在则创建
+	// 对应消费者组缓存管道不存在
 	if !ok {
 		return nil, errors.New("话题或消费者组不存在")
 	}
@@ -32,6 +37,9 @@ func Consume(topicName string, consumerGroup string) ([]byte, error) {
 	select {
 	case message := <-ConsumeMessageChannels[keyName].Channel:
 		ConsumeMessageChannels[keyName].ConsumeIndex = message.Index + 1
+		if message.Data == nil {
+			return nil, errors.New("nil message")
+		}
 		return message.Data, nil
 	default:
 		return nil, errors.New("no message")
@@ -59,7 +67,7 @@ func CreateConsumerGroup(topicName, consumerGroup string) error {
 	if gfs.FileExists(consumeIndexFilePath) {
 		return nil
 	}
-	// 打开日志文件
+	// 打开并创建消费索引记录文件
 	f, err := os.OpenFile(consumeIndexFilePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -69,6 +77,7 @@ func CreateConsumerGroup(topicName, consumerGroup string) error {
 	if err != nil {
 		return err
 	}
+	consumeChannelsMu.Lock()
 	ConsumeMessageChannels[consumeIndexMapKey] = &ConsumeMessagesChannel{
 		TopicName:            topicName,
 		Channel:              make(chan MessageForRead, configs.FirstMQConfig.FillNumberEachTime-1),
@@ -77,6 +86,7 @@ func CreateConsumerGroup(topicName, consumerGroup string) error {
 		FillIndex:            0,
 		ConsumeIndex:         0,
 	}
+	consumeChannelsMu.Unlock()
 	// FillMessages 填充消息
 	// 同时会开启消费索引保存功能 ( 一个子协程 )
 	ConsumeMessageChannels[consumeIndexMapKey].FillMessages()

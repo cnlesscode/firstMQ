@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/cnlesscode/firstMQ/configs"
-	"github.com/cnlesscode/gotool"
 )
 
 type SaveMessageToDiskStruct struct {
@@ -150,7 +149,6 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 		if err != nil {
 			return successCount, err
 		}
-		gotool.LogOk("新建一个索引文件", s.DataIndexFilePath)
 		s.DataLogFileWriteStartOffset = 0
 		s.DataIndexFileWriteStartOffset = 0
 		err = s.SaveDataLogsBase(messages[currentFileMessageCount:])
