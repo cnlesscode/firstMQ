@@ -2,7 +2,7 @@ module github.com/cnlesscode/firstMQ
 
 go 1.23.1
 
-require github.com/cnlesscode/gotool v0.1.6
+require github.com/cnlesscode/gotool v0.1.7
 
 require (
 	github.com/google/uuid v1.6.0

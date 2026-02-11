@@ -11,8 +11,8 @@ github.com/cloudwego/base64x v0.1.4 h1:jwCgWpFanWmN8xoIUHa2rtzmkd5J2plF/dnLS6Xd/
 github.com/cloudwego/base64x v0.1.4/go.mod h1:0zlkT4Wn5C6NdauXdJRhSKRlJvmclQ1hhJgA0rcu/8w=
 github.com/cloudwego/iasm v0.2.0 h1:1KNIy1I1H9hNNFEEH3DVnI4UujN+1zjpuk6gwHLTssg=
 github.com/cloudwego/iasm v0.2.0/go.mod h1:8rXZaNYT2n95jn+zTI1sDr+IgcD2GVs0nlbbQPiEFhY=
-github.com/cnlesscode/gotool v0.1.6 h1:/4opaGkkjjl7yIjwX1G4+AJ5bwCxWgAD15vmctS/qxw=
-github.com/cnlesscode/gotool v0.1.6/go.mod h1:MYvQALUlygcxSFWcURAExn9AOoNry4g0xV7713eKpMA=
+github.com/cnlesscode/gotool v0.1.7 h1:iamyfIH2xmjpZlTMfsoYK1Da1BvG/UCzgBMcLo4ifRk=
+github.com/cnlesscode/gotool v0.1.7/go.mod h1:MYvQALUlygcxSFWcURAExn9AOoNry4g0xV7713eKpMA=
 github.com/cnlesscode/serverFinder v1.5.3 h1:Hlk7XR0qlri20z2al59UnWASYKoqK7ggkcbnvJYyU4g=
 github.com/cnlesscode/serverFinder v1.5.3/go.mod h1:hoBBzuoG1wbMUdl3IfHr67VBuwmO0+zKaYs4bu702DU=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=

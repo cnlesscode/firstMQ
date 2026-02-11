@@ -11,10 +11,9 @@ import (
 	serverFinderClient "github.com/cnlesscode/serverFinder/client"
 )
 
-var subscribeServerConnections map[string]*MQConnection = make(map[string]*MQConnection)
+var subscribeServerConnections map[string]int = make(map[string]int)
 
-// 客户端订阅话题
-// 订阅端在服务端以连接池形式存储
+// 客户端订阅指定话题
 func Subscribe(ServerFinderAddr, topicName string, onMessage func(msg []byte)) {
 	serverFinderClient.Listen(
 		ServerFinderAddr,
@@ -36,6 +35,7 @@ func subscribeBase(mqServerAddr, topicName string, onMessage func(msg []byte)) {
 	if _, ok := subscribeServerConnections[keyName]; ok {
 		return
 	}
+	subscribeServerConnections[keyName] = 1
 SubscribeLoop:
 	// 建立连接
 	conn, err := net.Dial("tcp", mqServerAddr)
