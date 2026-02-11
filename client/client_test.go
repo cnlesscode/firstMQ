@@ -221,6 +221,7 @@ func TestConsumeMessageToDB(t *testing.T) {
 				response, _ := mqPool.Consume("default", "default")
 				val, err := strconv.ParseInt(response.Data, 10, 64)
 				if err != nil {
+					time.Sleep(time.Millisecond * 100)
 					continue
 				}
 				st := TestTable{
