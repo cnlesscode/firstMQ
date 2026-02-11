@@ -8,6 +8,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/cnlesscode/gotool"
+	"github.com/cnlesscode/gotool/db"
 )
 
 var serverFinderAddr string = "192.168.0.185:8881"
@@ -59,15 +62,15 @@ func TestProductAMessage(t *testing.T) {
 func TestProductMessages(t *testing.T) {
 	mqPool := New(serverFinderAddr, 100)
 	// 循环批量生产消息
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		wg := sync.WaitGroup{}
 		// 开始1w个协程，并发写入
-		for ii := 1; ii <= 10000; ii++ {
+		for ii := 0; ii < 10000; ii++ {
 			n := i*10000 + ii
 			wg.Add(1)
 			go func(iin int) {
 				defer wg.Done()
-				mqPool.Product("default", []byte(strconv.Itoa(iin)+" test message ..."))
+				mqPool.Product("default", []byte(strconv.Itoa(iin)))
 			}(n)
 		}
 		wg.Wait()
@@ -171,4 +174,62 @@ func TestSubscribe(t *testing.T) {
 	for {
 		time.Sleep(time.Second)
 	}
+}
+
+// go test -v -run=TestConsumeMessage
+type TestTable struct {
+	Id  int64
+	Val int64
+}
+
+// go test -v -run=TestConsumeMessageToDB
+func TestConsumeMessageToDB(t *testing.T) {
+	// 初始化数据库
+	DBConfig := map[string]map[string]string{
+		"DB": {
+			"RunMode": "production",
+			// 数据库类型
+			"DBType": "MySQL",
+			// 数据库地址
+			"Host": "localhost",
+			// 数据库用户名
+			"Username": "root",
+			// 数据库密码
+			"Password": "root",
+			// 端口
+			"Port":            "3306",
+			"ConnMaxLifetime": "180",
+			"MaxOpenConns":    "2000",
+			"MaxIdleConns":    "100",
+			"DatabaseName":    "test",
+			"TablePrefix":     "",
+			"Charset":         "utf8mb4",
+		},
+	}
+	db.Start(DBConfig)
+	gormDB := db.Init()
+
+	// 启动连接池
+	mqPool := New(serverFinderAddr, 100)
+	// 启动 100个协程
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				response, _ := mqPool.Consume("default", "default")
+				val, err := strconv.ParseInt(response.Data, 10, 64)
+				if err != nil {
+					continue
+				}
+				st := TestTable{
+					Val: val,
+				}
+				gormDB.Create(&st)
+			}
+		}()
+	}
+	wg.Wait()
+	gotool.LogOk("Done")
 }

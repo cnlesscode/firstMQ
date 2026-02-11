@@ -2,28 +2,12 @@ package kernel
 
 import (
 	"encoding/binary"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/cnlesscode/firstMQ/configs"
 	"github.com/cnlesscode/gotool"
 )
-
-// 消息结构体
-type SendMessageStruct struct {
-	Action        int
-	Topic         string
-	ConsumerGroup string
-	Data          any
-}
-
-// 响应消息结构体
-type ResponseMessage struct {
-	ErrCode int    `json:"errcode"`
-	Data    string `json:"data"`
-}
 
 type SaveMessageToDiskStruct struct {
 	TopicName string
@@ -81,7 +65,7 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 	var successCount int64 = 0
 	err = s.GetSaveIndex()
 	// 计算存储文件索引值
-	fileIndex := s.MaxSaveIndex / configs.FirstMQConfig.NumberOfFragmented
+	fileIndex := s.MaxSaveIndex / configs.FirstMQConfig.FragmentCapacity
 	// 初始化日志文件路径和索引文件路径
 	dataLogFilePath, dataIndexFilePath := InitLogFiles(s.TopicName, fileIndex)
 	// 如果数据文件路径不一致，则关闭文件句柄
@@ -119,16 +103,16 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 	// 检查消息总量是否超过最大存储数量
 	// 计算消息总数
 	var messageLength int64 = int64(len(messages))
-	dataLogStartIndexForCurrentFile := s.MaxSaveIndex % configs.FirstMQConfig.NumberOfFragmented
-	// 分片已满
-	if dataLogStartIndexForCurrentFile+messageLength > configs.FirstMQConfig.NumberOfFragmented {
+	dataLogStartIndexForCurrentFile := s.MaxSaveIndex % configs.FirstMQConfig.FragmentCapacity
+	// 消息会跨越两个分片
+	if dataLogStartIndexForCurrentFile+messageLength > configs.FirstMQConfig.FragmentCapacity {
 		// 截断消息
 		/*
 			| 起始值 | 分片容量  | 消息总数 | 截取长度 |
 			|   0    |   5     |    3   |     3  |
 			|   3    |   5     |    3   |     2  |
 		*/
-		currentFileMessageCount := configs.FirstMQConfig.NumberOfFragmented - dataLogStartIndexForCurrentFile
+		currentFileMessageCount := configs.FirstMQConfig.FragmentCapacity - dataLogStartIndexForCurrentFile
 		if dataLogStartIndexForCurrentFile > 0 {
 			fileInfo, err := s.DataLogFileHandle.Stat()
 			if err != nil {
@@ -137,7 +121,6 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 			s.DataLogFileWriteStartOffset = fileInfo.Size()
 		}
 		messagesForCruuentFile := messages[0:currentFileMessageCount]
-		// 此处计算一下 DataLogFileWriteStartOffset
 		err = s.SaveDataLogsBase(messagesForCruuentFile)
 		if err != nil {
 			return 0, err
@@ -174,7 +157,14 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 		if err != nil {
 			return successCount, err
 		}
-	} else {
+	} else { // 消息不会跨越两个分片
+		if dataLogStartIndexForCurrentFile > 0 {
+			fileInfo, err := s.DataLogFileHandle.Stat()
+			if err != nil {
+				return 0, err
+			}
+			s.DataLogFileWriteStartOffset = fileInfo.Size()
+		}
 		err = s.SaveDataLogsBase(messages)
 		if err != nil {
 			return successCount, err
@@ -183,33 +173,7 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 	return messageLength, nil
 }
 
-func (s *SaveMessageToDiskStruct) ValidateAndRepair() {
-	// 获取数据文件大小
-	dataFileInfo, err := os.Stat(s.DataLogFilePath)
-	if err != nil {
-		return
-	}
-	dataFileSize := dataFileInfo.Size()
-	fmt.Printf("dataFileSize: %v\n", dataFileSize)
-
-	// 读取索引文件最后两个8位数据
-	s.DataIndexFileHandle.Seek(-16, io.SeekEnd)
-	indexData := make([]byte, 16)
-	_, err = s.DataIndexFileHandle.Read(indexData)
-	if err != nil {
-		return
-	}
-	offset := binary.LittleEndian.Uint64(indexData[0:8])
-	length := binary.LittleEndian.Uint64(indexData[8:16])
-	s.DataIndexFileHandle.Seek(0, io.SeekEnd)
-	fmt.Printf("offset: %v\n", offset)
-	fmt.Printf("length: %v\n", length)
-}
-
 func (s *SaveMessageToDiskStruct) SaveDataLogsBase(messages [][]byte) error {
-	if s.DataLogFileWriteStartOffset != 0 {
-		s.ValidateAndRepair()
-	}
 	originalDataLogFileWriteStartOffset := s.DataLogFileWriteStartOffset
 	originalDataIndexFileWriteStartOffset := s.DataIndexFileWriteStartOffset
 	indexData := make([]int64, 0)
@@ -257,5 +221,6 @@ func (s *SaveMessageToDiskStruct) SaveDataLogsBase(messages [][]byte) error {
 	s.MaxSaveIndexFileHandle.Sync()
 	s.DataLogFileHandle.Sync()
 	s.DataIndexFileHandle.Sync()
+
 	return nil
 }

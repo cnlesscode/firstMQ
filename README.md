@@ -19,31 +19,19 @@ import (
 )
 
 func main() {
-	// 运行模式
-	if configs.RunMode == "debug" || configs.RunMode == "dev" {
-		go func() {
-			for {
-				time.Sleep(time.Second * 5)
-				fmt.Printf("协程数 : %v\n", runtime.NumGoroutine())
-			}
-		}()
-	}
 	server.Start()
 }
 ```
 
 #### configs.ini
 ```
-# 运行模式 debug 调试, release 正式
-RunMode=debug
-
 # 全局数据文件存储目录名称
 GlobalDataDirName=data
 
 # ServerFinder 服务配置
 [ServerFinder]
 # 服务地址
-Host=192.168.31.188
+Host=192.168.0.185
 # 服务端口
 Port=8881
 # 数据文件存储目录名称
@@ -56,7 +44,8 @@ Enable=yes
 # 话题数据本地存储目录名称
 DataLogsDirName=topics
 # 每个分片最多存储数据数量
-NumberOfFragmented=100000
+# 以每个消息1000字节为例，分片尺寸 = 1000 * 分片容量
+FragmentCapacity=100000
 # WebSocket 服务端口
 WebSocketPort=8883
 # 主服务端口
@@ -64,11 +53,11 @@ Port=8882
 # 生产消息时，话题数据临时存储管道容量，默认100万
 ChannelCapactiyForProduct=1000000
 # 落盘时每次最多读取数据数量
-MaxNumberForRepaireToDisk=5000
+MaxNumberForRepaireToDisk=1000
 # 消费服务每次向管道填充消息数量
 # 并发高时此数据设置高一些
 # 最大数量不能超过一个分片存储容量
-FillNumberEachTime=2000
+FillNumberEachTime=100
 # 落盘时空闲休眠时间，单位毫秒
 # 此处延迟时间越短 CPU 占用越高
 # 主机运算速度快应该设置大一些，否则循环会占用 CPU
@@ -78,5 +67,5 @@ IdleSleepTimeForWrite=100
 # 此处延迟时间越短 CPU 占用越高
 # 主机运算速度快应该设置大一些，否则循环会占用 CPU
 # 经测试 50 ~ 200 毫秒比较合理
-IdleSleepTimeForFillMessage=200
+IdleSleepTimeForFillMessage=100
 ```

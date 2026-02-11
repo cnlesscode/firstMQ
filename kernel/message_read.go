@@ -21,7 +21,7 @@ func ReadMessages(
 	topicName, consumerGroup string,
 	startIndex, readLength int64) ([]MessageForRead, int64, error) {
 	// 消息区间距离不能跨域2个分片
-	if readLength > configs.FirstMQConfig.NumberOfFragmented {
+	if readLength > configs.FirstMQConfig.FragmentCapacity {
 		return nil, 0, errors.New("长度超过分片容量")
 	}
 	if readLength < 1 {
@@ -87,11 +87,11 @@ func GetMessageIndexData(
 	dataLogPaths := make([]string, 0)
 
 	// 根据 offset 计算索引及数据文件位置
-	startFileIdex := startIndex / configs.FirstMQConfig.NumberOfFragmented
+	startFileIdex := startIndex / configs.FirstMQConfig.FragmentCapacity
 
 	// 检查消息是否位于2个分片中
 	endIndex := startIndex + length
-	endFileIdex := endIndex / configs.FirstMQConfig.NumberOfFragmented
+	endFileIdex := endIndex / configs.FirstMQConfig.FragmentCapacity
 
 	// 同一个分片
 	if startFileIdex == endFileIdex {
@@ -104,7 +104,7 @@ func GetMessageIndexData(
 			return nil, nil, err
 		}
 		defer indexFile.Close()
-		startIndexFor := startIndex - startFileIdex*configs.FirstMQConfig.NumberOfFragmented
+		startIndexFor := startIndex - startFileIdex*configs.FirstMQConfig.FragmentCapacity
 		for i := int64(0); i < length; i++ {
 			indexFile.Seek((startIndexFor+i)*16, 0)
 			var offsetStart int64 = 0
@@ -127,8 +127,8 @@ func GetMessageIndexData(
 	if err != nil {
 		return nil, nil, err
 	}
-	endLengthForFirst := configs.FirstMQConfig.NumberOfFragmented*(startFileIdex+1) - startIndex
-	startForFirst := startIndex - startFileIdex*configs.FirstMQConfig.NumberOfFragmented
+	endLengthForFirst := configs.FirstMQConfig.FragmentCapacity*(startFileIdex+1) - startIndex
+	startForFirst := startIndex - startFileIdex*configs.FirstMQConfig.FragmentCapacity
 	for i := int64(0); i < endLengthForFirst; i++ {
 		indexFile.Seek((i+startForFirst)*16, 0)
 		var offsetStart int64 = 0
@@ -155,7 +155,7 @@ func GetMessageIndexData(
 	if err != nil {
 		return dataLogPaths, indexData, nil
 	}
-	endLengthForSecond := endIndex - configs.FirstMQConfig.NumberOfFragmented*endFileIdex
+	endLengthForSecond := endIndex - configs.FirstMQConfig.FragmentCapacity*endFileIdex
 	for i := int64(0); i < endLengthForSecond; i++ {
 		indexFile2.Seek(i*16, 0)
 		var offsetStart int64 = 0
