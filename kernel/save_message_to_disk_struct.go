@@ -39,7 +39,7 @@ func NewASaveMessageToDiskStruct(topicName string) (*SaveMessageToDiskStruct, er
 	st.MaxSaveIndexFileHandle, err = os.OpenFile(
 		st.MaxSaveIndexFilePath,
 		os.O_CREATE|os.O_RDWR,
-		0644,
+		0777,
 	)
 	if err != nil {
 		return st, err
@@ -85,7 +85,7 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 	s.DataLogFileHandle, err = os.OpenFile(
 		s.DataLogFilePath,
 		os.O_CREATE|os.O_RDWR|os.O_APPEND,
-		0644)
+		0777)
 	if err != nil {
 		return 0, err
 	}
@@ -93,7 +93,7 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 	s.DataIndexFileHandle, err = os.OpenFile(
 		s.DataIndexFilePath,
 		os.O_CREATE|os.O_RDWR|os.O_APPEND,
-		0644,
+		0777,
 	)
 	if err != nil {
 		return 0, err
@@ -135,7 +135,7 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 		s.DataLogFileHandle, err = os.OpenFile(
 			s.DataLogFilePath,
 			os.O_CREATE|os.O_RDWR|os.O_APPEND,
-			0644,
+			0777,
 		)
 		if err != nil {
 			return successCount, err
@@ -144,7 +144,7 @@ func (s *SaveMessageToDiskStruct) SaveLogsToFile(topicName string, messages [][]
 		s.DataIndexFileHandle, err = os.OpenFile(
 			s.DataIndexFilePath,
 			os.O_CREATE|os.O_RDWR|os.O_APPEND,
-			0644,
+			0777,
 		)
 		if err != nil {
 			return successCount, err

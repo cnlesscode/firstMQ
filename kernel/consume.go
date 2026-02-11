@@ -68,7 +68,7 @@ func CreateConsumerGroup(topicName, consumerGroup string) error {
 		return nil
 	}
 	// 打开并创建消费索引记录文件
-	f, err := os.OpenFile(consumeIndexFilePath, os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile(consumeIndexFilePath, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return err
 	}

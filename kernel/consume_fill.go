@@ -80,7 +80,7 @@ func (m *ConsumeMessagesChannel) FillMessages() {
 }
 
 func (m *ConsumeMessagesChannel) GetConsumeIndex() (int64, error) {
-	f, err := os.OpenFile(m.ConsumeIndexFilePath, os.O_RDONLY, 0644)
+	f, err := os.OpenFile(m.ConsumeIndexFilePath, os.O_RDONLY, 0777)
 	if err != nil {
 		return 0, err
 	}

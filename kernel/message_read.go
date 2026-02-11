@@ -54,7 +54,7 @@ func ReadMessages(
 	}
 	messages := make([]MessageForRead, 0, messageCountNumber)
 	for k, dataLogPath := range dataLogPaths {
-		f, err := os.OpenFile(dataLogPath, os.O_RDONLY, 0644)
+		f, err := os.OpenFile(dataLogPath, os.O_RDONLY, 0777)
 		// 如果文件打开失败，填充对应数量的空消息(为了保持索引对称)，然后跳过
 		if err != nil {
 			for range messageOffsetMap[k] {
@@ -118,7 +118,7 @@ func GetMessageIndexData(
 		dataLogPaths = append(dataLogPaths, logFilePath)
 		indexData[0] = make([]MessageOffsetStruct, 0)
 		// 打开数据索引文件
-		indexFile, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0644)
+		indexFile, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0777)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -142,7 +142,7 @@ func GetMessageIndexData(
 	dataLogPaths = append(dataLogPaths, logFilePath)
 	indexData[0] = make([]MessageOffsetStruct, 0)
 	// 打开数据索引文件
-	indexFile, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0644)
+	indexFile, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0777)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -171,7 +171,7 @@ func GetMessageIndexData(
 	dataLogPaths = append(dataLogPaths, logFilePath)
 	indexData[1] = make([]MessageOffsetStruct, 0)
 	// 打开数据索引文件
-	indexFile2, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0644)
+	indexFile2, err := os.OpenFile(indexFilePath, os.O_RDONLY, 0777)
 	if err != nil {
 		return dataLogPaths, indexData, nil
 	}

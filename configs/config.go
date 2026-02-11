@@ -66,7 +66,7 @@ func Init() {
 	)
 	// 2.1 检查全局数据目录
 	if !gfs.DirExists(GlobalDataDir) {
-		err := os.Mkdir(GlobalDataDir, 0644)
+		err := os.Mkdir(GlobalDataDir, 0777)
 		if err != nil {
 			panic("数据目录创建失败: " + err.Error() + "\n")
 		}
