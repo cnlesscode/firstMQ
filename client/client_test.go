@@ -49,7 +49,7 @@ func TestProductAMessage(t *testing.T) {
 	// 生成环境无需延迟
 	time.Sleep(time.Second * 1)
 	//
-	response, err := mqPool.Product("default", []byte("a test message ..."))
+	response, err := mqPool.Product("default", []byte("a test message ..."), false)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	} else {
@@ -70,7 +70,10 @@ func TestProductMessages(t *testing.T) {
 			wg.Add(1)
 			go func(iin int) {
 				defer wg.Done()
-				mqPool.Product("default", []byte(strconv.Itoa(iin)))
+				mqPool.Product(
+					"default",
+					[]byte(strconv.Itoa(iin)),
+					false)
 			}(n)
 		}
 		wg.Wait()

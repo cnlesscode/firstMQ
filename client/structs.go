@@ -10,6 +10,7 @@ type Message struct {
 	Topic         string
 	ConsumerGroup string
 	Data          []byte
+	Broadcast     bool
 }
 
 // 响应消息结构体

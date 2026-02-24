@@ -18,6 +18,7 @@ const (
 	CreateTopic                int = 3
 	TopicList                  int = 4
 	ServerStatus               int = 5
+	Broadcast                  int = 6
 	CreateConsumeGroup         int = 7
 	CreateConsumeGroupForLocal int = 8
 	CreateTopicForLocal        int = 9
@@ -26,7 +27,6 @@ const (
 	SeverStatusLocal           int = 12
 	Subscribe                  int = 13
 	Ping                       int = 30
-	Pong                       int = 31
 )
 
 // 接收消息结构体
@@ -35,6 +35,7 @@ type ReceiveMessage struct {
 	Topic         string
 	Data          []byte
 	ConsumerGroup string
+	Broadcast     bool
 }
 
 // 响应消息结构体
@@ -71,8 +72,10 @@ func Response(message ReceiveMessage) []byte {
 		if err != nil {
 			return ResponseResult(100051, err.Error(), 0)
 		}
-		// 将消息转发给订阅者
-		go SendMessageToSubscribers(message)
+		// 广播消息
+		if message.Broadcast {
+			go SendMessageToSubscribers(message)
+		}
 		return ResponseResult(0, "消息提交成功", Product)
 
 	// 消费消息
@@ -116,7 +119,9 @@ func Response(message ReceiveMessage) []byte {
 
 	// 创建消费者组 [本机]
 	case message.Action == CreateConsumeGroupForLocal:
-		err := kernel.CreateConsumerGroup(message.Topic, message.ConsumerGroup)
+		err := kernel.CreateConsumerGroup(
+			message.Topic,
+			message.ConsumerGroup)
 		if err != nil {
 			return ResponseResult(100300, err.Error(), 0)
 		}
@@ -158,11 +163,10 @@ func Response(message ReceiveMessage) []byte {
 	case message.Action == Ping:
 		return ResponseResult(0, "pong", Ping)
 
-	// Pong
-	case message.Action == Pong:
-		// 将消息转发给订阅者
+	// Broadcast
+	case message.Action == Broadcast:
 		go SendMessageToSubscribers(message)
-		return ResponseResult(0, "pong", Pong)
+		return ResponseResult(0, "broadcast", Broadcast)
 
 	// 服务器列表
 	case message.Action == SeverList:

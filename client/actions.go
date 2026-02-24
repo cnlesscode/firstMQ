@@ -12,12 +12,13 @@ func (mqPool *MQPool) CreateTopic(topic string) (ResponseMessage, error) {
 }
 
 // 生产消息
-func (mqPool *MQPool) Product(topic string, data []byte) (ResponseMessage, error) {
+func (mqPool *MQPool) Product(topic string, data []byte, Broadcast bool) (ResponseMessage, error) {
 	return mqPool.Send(
 		Message{
-			Action: server.Product,
-			Topic:  topic,
-			Data:   data,
+			Action:    server.Product,
+			Topic:     topic,
+			Data:      data,
+			Broadcast: Broadcast,
 		})
 }
 
@@ -33,18 +34,20 @@ func (mqPool *MQPool) Consume(topic, consumerGroup string) (ResponseMessage, err
 
 // 创建消费者组
 func (mqPool *MQPool) CreateConsumerGroup(topic, consumerGroup string) (ResponseMessage, error) {
-	return mqPool.Send(Message{
-		Action:        server.CreateConsumeGroup,
-		Topic:         topic,
-		ConsumerGroup: consumerGroup,
-	})
+	return mqPool.Send(
+		Message{
+			Action:        server.CreateConsumeGroup,
+			Topic:         topic,
+			ConsumerGroup: consumerGroup,
+		})
 }
 
 // 获取话题列表
 func (mqPool *MQPool) GetTopicList() (ResponseMessage, error) {
-	return mqPool.Send(Message{
-		Action: server.TopicList,
-	})
+	return mqPool.Send(
+		Message{
+			Action: server.TopicList,
+		})
 }
 
 // Ping
@@ -56,11 +59,11 @@ func (mqPool *MQPool) Ping() (ResponseMessage, error) {
 	)
 }
 
-// Pong
-func (mqPool *MQPool) Pong(topic string, msg []byte) (ResponseMessage, error) {
+// Broadcast
+func (mqPool *MQPool) Broadcast(topic string, msg []byte) (ResponseMessage, error) {
 	return mqPool.Send(
 		Message{
-			Action: server.Pong,
+			Action: server.Broadcast,
 			Topic:  topic,
 			Data:   msg,
 		},
