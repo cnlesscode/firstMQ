@@ -91,7 +91,6 @@ func (t *TCPServer) Handle(conn net.Conn) {
 				subscribeClientId,
 			)
 			subscribeClientsMutex.Unlock()
-
 		} else {
 			// 输出响应
 			err = gotool.WriteTCPResponse(conn, messageByte)

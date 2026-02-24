@@ -18,7 +18,6 @@ const (
 	CreateTopic                int = 3
 	TopicList                  int = 4
 	ServerStatus               int = 5
-	Ping                       int = 6
 	CreateConsumeGroup         int = 7
 	CreateConsumeGroupForLocal int = 8
 	CreateTopicForLocal        int = 9
@@ -26,6 +25,8 @@ const (
 	SeverStatus                int = 11
 	SeverStatusLocal           int = 12
 	Subscribe                  int = 13
+	Ping                       int = 30
+	Pong                       int = 31
 )
 
 // 接收消息结构体
@@ -60,6 +61,7 @@ func TCPResponse(msg []byte) (ReceiveMessage, []byte) {
 // 响应函数
 func Response(message ReceiveMessage) []byte {
 	switch {
+
 	// 生产消息
 	case message.Action == Product:
 		if message.Topic == "" {
@@ -97,6 +99,7 @@ func Response(message ReceiveMessage) []byte {
 			0,
 			"话题 : "+message.Topic+" 创建成功",
 			CreateTopic)
+
 	// 创建话题 [ 本机 ]
 	case message.Action == CreateTopicForLocal:
 		err := kernel.CreateTopic(message.Topic)
@@ -122,6 +125,7 @@ func Response(message ReceiveMessage) []byte {
 			0,
 			"消费者组 : "+message.ConsumerGroup+" 创建成功",
 			CreateConsumeGroupForLocal)
+
 	// 创建消费者组 [集群]
 	case message.Action == CreateConsumeGroup:
 		err := kernel.CreateConsumeGroupForClusters(
@@ -153,6 +157,12 @@ func Response(message ReceiveMessage) []byte {
 	// Ping
 	case message.Action == Ping:
 		return ResponseResult(0, "pong", Ping)
+
+	// Pong
+	case message.Action == Pong:
+		// 将消息转发给订阅者
+		go SendMessageToSubscribers(message)
+		return ResponseResult(0, "pong", Pong)
 
 	// 服务器列表
 	case message.Action == SeverList:
@@ -193,6 +203,8 @@ func Response(message ReceiveMessage) []byte {
 				0)
 		}
 		return ResponseResult(0, string(dataByte), SeverStatusLocal)
+
+	// 获取服务器状态
 	case message.Action == SeverStatus:
 		nodes, err := kernel.GetClusterNodes()
 		if err != nil {
@@ -226,8 +238,11 @@ func Response(message ReceiveMessage) []byte {
 				0)
 		}
 		return ResponseResult(0, string(dataByte), SeverStatus)
+
+	// 订阅
 	case message.Action == Subscribe:
 		return nil
+
 	// 默认响应
 	default:
 		return ResponseResult(
